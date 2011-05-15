@@ -262,7 +262,10 @@ class RPGBot(irc.IRCClient):
                             c.execute("UPDATE stats SET progression = progression + :progress WHERE name=:user AND statname=:stat", { 'progress':gainedexp, 'user':user, 'stat':self.school[user] })
                             conn.commit()
                     except (ValueError, KeyError):
-                        session.close()
+                        try:
+                            session.close()
+                        except UnboundLocalError:
+                            pass
                         #pass
             except (ValueError, KeyError):
                 session.close()
