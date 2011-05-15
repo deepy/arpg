@@ -651,7 +651,7 @@ class RPGBot(irc.IRCClient):
             self.users[user].level += 1
             print "%s is now level: %s" % (user, self.users[user].level)
             if self.msg_user == 1:
-                self.msg(user, "Congratulations! You gained level %s" % self.users[user])
+                self.msg(user, "Congratulations! You gained level %s" % self.users[user].level)
             self.notify("%s gained level %s!" % (str(user), str(self.users[user].level)))
             self.users_html()
         #conn.commit()
@@ -769,8 +769,46 @@ class RPGBot(irc.IRCClient):
             return 1
         elif level == 29 and exp >= 368300:
             return 1
-        #elif level == 30 and exp >= 368300:
-            #return 1
+        elif level == 30 and exp >= 409000:
+            return 1
+        elif level == 31 and exp >= 452600:
+            return 1
+        elif level == 32 and exp >= 499200:
+            return 1
+        elif level == 33 and exp >= 548900:
+            return 1
+        elif level == 34 and exp >= 601800:
+            return 1
+        elif level == 35 and exp >= 658000:
+            return 1
+        elif level == 36 and exp >= 717600:
+            return 1
+        elif level == 37 and exp >= 780700:
+            return 1
+        elif level == 38 and exp >= 847400:
+            return 1
+        elif level == 39 and exp >= 917800:
+            return 1
+        elif level == 40 and exp >= 992000:
+            return 1
+        elif level == 41 and exp >= 1070100:
+            return 1
+        elif level == 42 and exp >= 1152200:
+            return 1
+        elif level == 43 and exp >= 1238400:
+            return 1
+        elif level == 44 and exp >= 1328800:
+            return 1
+        elif level == 45 and exp >= 1423500:
+            return 1
+        elif level == 46 and exp >= 1522600:
+            return 1
+        elif level == 47 and exp >= 1626200:
+            return 1
+        elif level == 48 and exp >= 1734400:
+            return 1
+        elif level == 49 and exp >= 1847300:
+            return 1
         else:
             return 0
 
