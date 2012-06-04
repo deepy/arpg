@@ -483,15 +483,22 @@ class RPGBot(irc.IRCClient):
 
     def rpg_changeschool(self, user, message):
         """ Change school. """
-        c.execute("SELECT statname from stats WHERE name=:user AND statname=:statname", { 'user':user, 'statname':int(message) })
-        if c.fetchone() == None:
-            self.msg(user, "Changing school.")
-            c.execute("INSERT into stats (name, statname, level, progression) values(:user, :school, 0, 0 )", { 'user':user, 'school':int(message) })
-        else:
-            self.msg(user, "Changing school.")
-        c.execute("UPDATE users SET school=:school WHERE name=:user", {'user':user, 'school':int(message) })
-        self.school[user] = int(message)
-        conn.commit()
+        if user in self.users:
+            if message == "arcane":
+                choice = 1
+            elif message == "gym":
+                choice = 2
+            elif message == "streets":
+                choice = 3
+            else:
+                return "Invalid choice."
+            if choice:
+                self.school[user] = choice
+                session = Session()
+                session.add(self.users[user])
+                session.commit()
+                session.close()
+                return "Updated school choice."
 
     def rpg_checklevel(self, level, exp):
         """ Harcoded level tables. """
@@ -700,9 +707,7 @@ class RPGBot(irc.IRCClient):
         elif (self.messbuf[0] == "sonline"):
             self.msg(user, str(self.school))
         elif (self.messbuf[0] == "login"):
-            #print self.whois(user)
             self.whois(user)
-            #self.rpg_login(user, 0)
         elif (self.messbuf[0] == "logout"):
             #print self.whois(user)
             self.rpg_logout(user)
@@ -713,7 +718,6 @@ class RPGBot(irc.IRCClient):
                     self.msg(user, self.rpg_getlegitclass(user, 2))
             except KeyError:
                 session.close()
-                #pass #DEBUG ATTEMPT
         elif (self.messbuf[0] == "class"):
             try:
                 self.rpg_changeclass(user, self.rpg_classname(self.messbuf[1]))
@@ -722,15 +726,9 @@ class RPGBot(irc.IRCClient):
                 self.msg(user, "You are allowed to change class once per every cl.")
         elif (self.messbuf[0] == "school"):
             try:
-                if self.messbuf[1] == "arcane":
-                    self.rpg_changeschool(user, 1)
-                elif self.messbuf[1] == "gym":
-                    self.rpg_changeschool(user, 2)
-                elif self.messbuf[1] == "streets":
-                    self.rpg_changeschool(user, 3)
+                self.msg(user, self.rpg_changeschool(user, self.messbuf[1]))
             except IndexError:
-                session.close()
-                self.msg(user, "Possible choices are: arcane, gym, streets")
+                self.msg(user, "Error, valid choices are: arcane, gym, streets.")
         elif (self.messbuf[0] == "alogin"):
             if user == "Cat":
                 self.rpg_login(self.messbuf[1])
