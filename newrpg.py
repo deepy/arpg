@@ -154,6 +154,7 @@ class RPGBot(irc.IRCClient):
         self.mode(self.nickname, True, "R")
         self.join(self.factory.channel)
         self.join("arpg")
+        self.join("#crusaders,#arbiters")
 
     def irc_RPL_WHOISCHANNELS(self, prefix, params):
         nick = params[1]
