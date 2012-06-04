@@ -264,87 +264,6 @@ class RPGBot(irc.IRCClient):
         if len(self.users) >= 1:
             self.rpg_fight(self.rpg_pickrandom()[0])
 
-    def rpg_shop(self, user, argument):
-        if self.users[user]:
-            if argument == "":
-                for item in self.rpg_shoplist(0, "", self.users[user].cls):
-                    self.msg(user, item)
-                self.msg(user, "use !shop weapon to buy a better weapon.")
-            else:
-                #UPDATE stats SET qty=:qty WHERE target = "world" AND type="tax"
-                self.buffer = argument.split(' ', 2)
-                if self.buffer[0] == "weapon":
-                    if user.gold >= self.rpg_pricetable(self.rpg_getequipment(1, user), user.cls):
-                        self.msg(user, "Buying a %s for %s gold." % (self.rpg_shoplist(1, self.rpg_getequipment(1, user), user.cls), self.rpg_pricetable(self.rpg_getequipment(1, user), user.cls)))
-                        self.rpg_buyitem(self.rpg_getequipment(1, user), user.cls, user)
-                    else:
-                        self.msg(user, "You can't afford a %s." % (self.rpg_shoplist(1, self.rpg_getequipment(1, user), user.cls)) )
-
-    def rpg_shoplist(self, prefix, argument, pclass):
-        self.shopbuffer = []
-        self.weaponbuffer = []
-        self.shopbuffer.append("1, Knife and Rawhide %s gold" % (self.rpg_pricetable(1, pclass)))
-        self.shopbuffer.append("2, Polarbear and Eeelhide %s gold" % (self.rpg_pricetable(2, pclass)))
-        self.shopbuffer.append("3, Peter, Paul and Mary %s gold" % (self.rpg_pricetable(2, pclass)))
-        self.shopbuffer.append("4, Godblade and Pancake %s gold" % (self.rpg_pricetable(4, pclass)))
-        self.weaponbuffer.append("Knife")
-        self.weaponbuffer.append("Polarbear")
-        self.weaponbuffer.append("Peter, Paul")
-        self.weaponbuffer.append("Godblade")
-
-        if prefix == 0:
-            try:
-                return self.shopbuffer[argument-1]
-            except SyntaxError:
-                raise
-                return self.shopbuffer
-        elif prefix == 1:
-            try:
-                return self.weaponbuffer[argument-1]
-            except SyntaxError:
-                return self.weaponbuffer
-
-    def rpg_pricetable(self, argument, pclass):
-        self.featbuf = self.rpg_checkfeats(int(pclass))
-        if "minortax" in self.featbuf:
-            self.taxbuf = 1.20
-        elif "hugetax" in self.featbuf:
-            self.taxbuf = 1.10
-        else:
-            self.taxbuf = 1.25
-        if argument == 1:
-            return int(1000*self.taxbuf)
-        elif argument == 2:
-            return int(2000*self.taxbuf)
-        elif argument == 3:
-            return int(3000*self.taxbuf)
-        else:
-            return int(90000000*self.taxbuf)
-
-    def rpg_buyitem(self, argument, pclass, user):
-        self.featbuf = self.rpg_checkfeats(int(pclass))
-        if "minortax" in self.featbuf:
-            self.taxbuf = 0.20
-        elif "hugetax" in self.featbuf:
-            self.taxbuf = 0.10
-        else:
-            self.taxbuf = 0.25
-        
-        if argument == 1:
-            self.buftax = int(1000*self.taxbuf)
-        elif argument == 2:
-            self.buftax = int(2000*self.taxbuf)
-        elif argument == 3:
-            self.buftax = int(3000*self.taxbuf)
-        
-        c.execute("SELECT qty from statistics where target=:target AND type=:type", {'target':"world", 'type':"tax" })
-        self.qty = int(c.fetchone()[0]) + int(self.buftax)
-        c.execute("UPDATE statistics SET qty=:qty WHERE target=:target AND type=:type", { 'qty':self.qty, 'target':"world", 'type':"tax" })
-        c.execute("SELECT gold, weapon, armor FROM users WHERE name=:user", { 'user':user })
-        self.plbuf = c.fetchone()
-        c.execute("UPDATE users SET gold=:gold, weapon=:weapon WHERE name=:user", { 'gold':(self.plbuf[0] - self.rpg_pricetable(self.rpg_getequipment(1, user), user.cls)), 'weapon':(self.plbuf[1] + 1), 'user':user } )
-        conn.commit()
-
     def rpg_fight(self, user):
         #c.execute("SELECT exp, gold, weapon, armor FROM users WHERE name=:user", { 'user':user })
         session = Session()
@@ -842,12 +761,6 @@ class RPGBot(irc.IRCClient):
             self.msg(user, self.rpg_getequipment(3, self.messbuf[1]))
         elif (self.messbuf[0] == "online"):
             self.msg(user, int(time()) - self.boot)
-        elif (self.messbuf[0] == "shop"):
-            self.msg(user, "Shop is being revamped.")
-            #try:
-            #    self.rpg_shop(user, self.messbuf[1])
-            #except (IndexError):
-            #    self.rpg_shop(user, "")
         elif (self.messbuf[0] == "html"):
             if user == "Cat":
                 self.users_html()
@@ -860,7 +773,7 @@ class RPGBot(irc.IRCClient):
                 self.html_fulldump()
         else:
             if user.find("Serv") == -1:
-                self.msg(user, "Commands are: register, login, shop, classes, school, class")
+                self.msg(user, "Commands are: register, login, classes, school, class")
         session.close() #DEBUG ATTEMPT
 
 
