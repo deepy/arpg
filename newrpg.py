@@ -24,13 +24,14 @@ import ConfigParser
 # templates
 from jinja2 import Environment, FileSystemLoader
 
-# loading the mobile template
-env = Environment(loader=FileSystemLoader('/home/deepy/public_html/arpg/m/'))
-template = env.get_template('mobile.tpl')
-
 #Configurations
 Config = ConfigParser.ConfigParser()
 Config.read("config.ini")
+
+# loading the mobile template
+env = Environment(loader=FileSystemLoader(Config.get("web", "templatedirectory")))
+template = env.get_template('mobile.tpl')
+template_output = Config.get("web", "outputdirectory")
 
 #sqlite start
 conn = sqlite3.connect('rpgame.db')
@@ -127,6 +128,7 @@ class User(Base):
     def __repr__(self):
         return "<User('%s: %s (%s)')>" % (self.name, self.level, self.network)
 
+Base.metadata.create_all(db) #Uncomment this on the first run.
 # sqlalchy ORM end
 
 class RPGBot(irc.IRCClient):  
@@ -186,7 +188,6 @@ class RPGBot(irc.IRCClient):
         self.mode(self.nickname, True, "R")
         self.join(self.factory.channel)
         self.join("arpg")
-        self.join("#crusaders,#arbiters")
 
     def irc_RPL_WHOISCHANNELS(self, prefix, params):
         nick = params[1]
@@ -198,7 +199,6 @@ class RPGBot(irc.IRCClient):
         if params[2] == 'is a registered nick':
             self.rpg_login(params[1])
         else:
-            #print "307: %s" % params
             pass
 
     def irc_RPL_WHOREPLY(self, prefix, params):
@@ -227,7 +227,7 @@ class RPGBot(irc.IRCClient):
                 self.command(user, msg, 0)
         elif channel.lower() == self.factory.channel.lower():
             try:
-                if self.users[user].name == user:
+                if user in self.users:
                     session = Session()
                     #c.execute("SELECT exp, charisma, level, clown_level FROM users WHERE name=:user", { 'user':user })
                     #self.talkbuf = c.fetchone()
@@ -257,16 +257,6 @@ class RPGBot(irc.IRCClient):
                     session.commit()
                     session.close()
                     print "<%s> %s (%s)" % (user, msg, gainedexp)
-                    try:
-                        if self.school[user]:
-                            c.execute("UPDATE stats SET progression = progression + :progress WHERE name=:user AND statname=:stat", { 'progress':gainedexp, 'user':user, 'stat':self.school[user] })
-                            conn.commit()
-                    except (ValueError, KeyError):
-                        try:
-                            session.close()
-                        except UnboundLocalError:
-                            pass
-                        #pass
             except (ValueError, KeyError):
                 session.close()
                 pass #DEBUG ATTEMPT
@@ -814,7 +804,7 @@ class RPGBot(irc.IRCClient):
 
 
     def users_html(self):
-        self.f = open("/home/deepy/public_html/arpg/%s/online.txt" % self.factory.network, "w")
+        self.f = open("%s/%s/online.txt" % (template_output, self.factory.network), "w")
         self.buffer = "Users online:\n"
         for user in self.users:
             self.buffer += "%s(%s) " % (user, self.users[user].level)
@@ -827,7 +817,7 @@ class RPGBot(irc.IRCClient):
         #self.html_m_online(self.failbuffer.split(" ")) TEMP OFF
 
     def factions_html(self):
-        self.f = open("/home/deepy/public_html/arpg/%s/factions.txt" % self.factory.network, "w")
+        self.f = open("%s/%s/factions.txt" % (template_output, self.factory.network), "w")
         self.buffer = "Crusaders:\n"
         c.execute("SELECT name, level, clown_level, class, gold from USERS WHERE faction=1 ORDER by level DESC")
         for row in c:
@@ -850,7 +840,7 @@ class RPGBot(irc.IRCClient):
         pass
 
     def html_m_online(self, listauser):
-        self.f = open("/home/deepy/public_html/arpg/m/%s/online.html" % self.factory.network, "w")
+        self.f = open("%s/m/%s/online.html" % (template_output, self.factory.network), "w")
         self.buflist = []
         #for item in self.factions:
         #    self.buflist.append(listitem("#", item))
@@ -858,19 +848,19 @@ class RPGBot(irc.IRCClient):
         self.f.close()
 
     def html_m_user(self, userlist):
-        self.f = open("/home/deepy/public_html/arpg/m/%s/users.html" % self.factory.network, "w")
+        self.f = open("%s/m/%s/users.html" % (template_output, self.factory.network), "w")
         self.f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=userlist ))
         self.f.close()
 
 
     def html_m_factions(self, factionlist):
-        self.f = open("/home/deepy/public_html/arpg/m/%s/factions.html" % self.factory.network, "w")
+        self.f = open("%s/m/%s/factions.html" % (template_output, self.factory.network), "w")
         self.f.write(template.render(title="Factions", navigation= [listitem("index.html", "Home")], pretext=factionlist ))
         self.f.close()
 
     def html_fulldump(self):
         session = Session()
-        self.f = open("/home/deepy/public_html/arpg/%s/users.txt" % self.factory.network, "w")
+        self.f = open("%s/%s/users.txt" % (template_output, self.factory.network), "w")
         self.buffer = "IRCRPG players:\n"
         self.classbuff = ""
         #c.execute("SELECT name, level, clown_level, class, gold from USERS ORDER by level DESC")
@@ -885,29 +875,12 @@ class RPGBot(irc.IRCClient):
         session.close()
 
     def whois(self, nickname, server=None):
-        """
-        Retrieve user information about the given nick name.	
-        @type nickname: C{str}
-        @param nickname: The nick name about which to retrieve information.
-        """
         if server is None:
             self.sendLine('WHOIS ' + nickname)
         else:
             self.sendLine('WHOIS %s %s' % (server, nickname))
 
-
     def kick(self, channel, user, reason=None):
-        """
-        Attempt to kick a user from a channel.
-
-        @type channel: C{str}
-        @param channel: The name of the channel to kick the user from. If it
-            has no prefix, C{'#'} will to prepended to it.
-        @type user: C{str}
-        @param user: The nick of the user to kick.
-        @type reason: C{str}
-        @param reason: If given, the reason for kicking the user.
-        """
         if channel[0] not in '&#!+': channel = '#' + channel
         if reason:
             self.sendLine("KICK %s %s :%s" % (channel, user, reason))
@@ -1052,11 +1025,11 @@ class RPGBotFactory(protocol.ClientFactory):
 
 
 if __name__ == '__main__':
-    f = RPGBotFactory("ArloriaNET", "RPG", "#welcome")
+    f = RPGBotFactory("ArloriaNET", "RPG2", "#rpgtest")
     #f2 = RPGBotFactory("Coldfront", "RPG","#rpg")
     
     # connect factory to this host and port
-    reactor.connectTCP("127.0.0.1", 6667, f)
+    reactor.connectTCP("irc.arloria.net", 6667, f)
     #reactor.connectTCP("irc.coldfront.net", 6667, f2)
     # run bot
     reactor.run()
