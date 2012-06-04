@@ -33,37 +33,6 @@ env = Environment(loader=FileSystemLoader(Config.get("web", "templatedirectory")
 template = env.get_template('mobile.tpl')
 template_output = Config.get("web", "outputdirectory")
 
-#sqlite start
-conn = sqlite3.connect('rpgame.db')
-c = conn.cursor()
-#sqlite end
-
-#Troubleshooting start
-
-#import logging
-
-#mypooly = logging.basicConfig(filename='pool.log',level=logging.INFO)
-#mypooly.getLogger('sqlalchemy.pool').setLevel(logging.INFO)
-
-#mycalls = logging.basicConfig(filename='calls.log',level=logging.INFO)
-#mycalls.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
-#logger = logging.getLogger('sqlalchemy.pool')
-#hdlr = logging.FileHandler('pool.log')
-#formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-#hdlr.setFormatter(formatter)
-#logger.addHandler(hdlr)
-#logger.setLevel(logging.INFO)
-
-#logger2 = logging.getLogger('sqlalchemy.engine')
-#hdlr2 = logging.FileHandler('calls.log')
-#formatter2 = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-#hdlr2.setFormatter(formatter2)
-#logger2.addHandler(hdlr2)
-#logger2.setLevel(logging.INFO)
-
-#Troubleshooting end
-
 #sqlalchy start
 db = create_engine(Config.get("db", "string"), echo=False)
 Session = sessionmaker(bind=db,expire_on_commit=False)
@@ -590,13 +559,9 @@ class RPGBot(irc.IRCClient):
 
     def rpg_getclass(self, user):
         """ Returns class number for user. """
-        c.execute("SELECT class from USERS where NAME=:user", { 'user':user })
-        return c.fetchone()[0]
-
-    #def rpg_getgold(self, user):
-    #    """ Returns players gold. """
-    #    c.execute("SELECT gold from USERS where NAME=:user", { 'user':user })
-    #    return c.fetchone()[0]
+        #c.execute("SELECT class from USERS where NAME=:user", { 'user':user })
+        #return c.fetchone()[0]
+        return self.users[user].cls
 
     def rpg_getequipment(self, type, user):
         """ Returns equipment score. """
