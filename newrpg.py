@@ -211,13 +211,6 @@ class RPGBot(irc.IRCClient):
     def privmsg(self, user, channel, msg):
         """This will get called when the bot receives a message."""
         user = user.split('!', 1)[0]
-        #Handled elsewhere
-        #print "<%s> %s" % (user, msg)
-        
-        #Split message to find commands.
-        #self.messbuf = msg.split(" ", 1)
-        #self.whois(user)
-
         # Check to see if they're sending me a private message
         if channel.lower() == self.nickname.lower():
             try:
@@ -229,30 +222,20 @@ class RPGBot(irc.IRCClient):
             try:
                 if user in self.users:
                     session = Session()
-                    #c.execute("SELECT exp, charisma, level, clown_level FROM users WHERE name=:user", { 'user':user })
-                    #self.talkbuf = c.fetchone()
-                    #gainedexp = int(len(set(msg.lower())) * self.talkbuf[1] / ((self.users[user]+1) / 2))
                     gainedexp = int((len(set(msg.lower()))+5) * self.users[user].charisma / 5)
-                    print "%s (%s)" % (msg, gainedexp)
-                    #print "set: %s, Charisma: %s, level:" % (len(set(msg.lower())), self.talkbuf[1], self.users[user])
-
-                    #c.execute("UPDATE users SET exp=:exp WHERE name=:user", { 'exp':gainedexp+self.talkbuf[0], 'user':user })
                     self.rpg_awardexp(user, gainedexp)
                     if random.randint(0,35) == 18:
                         if self.users[user].charisma+1 >= 20:
-                            #c.execute("UPDATE users SET charisma=:charisma, clown_level=:clown_level WHERE name=:user", { 'charisma':6, 'clown_level':self.talkbuf[3]+1, 'user':user })
                             self.users[user].clown_level += 1
                             self.users[user].charisma = 6
                             print "%s gained a clown level!" % user
                             self.notify("%s gained a class level!" % str(user))
                         else:
-                            #c.execute("UPDATE users SET charisma=:charisma WHERE name=:user", { 'charisma':self.talkbuf[1]+1, 'user':user })
                             self.users[user].charisma += 1
                             print "%s gained a charisma!" % user
                             self.notify("%s gained a charisma!" % str(user))
                     if random.randint(0,35) == 18:
                         self.rpg_randomfight()
-                    #conn.commit()
                     session.add(self.users[user])
                     session.commit()
                     session.close()
@@ -260,9 +243,6 @@ class RPGBot(irc.IRCClient):
             except (ValueError, KeyError):
                 session.close()
                 pass #DEBUG ATTEMPT
-            #print self.messbuf[1]
-        #else:
-        #    if (self.messbuf[0] == "!fighwf12tg234t3gtg32t"):
         return
 
     def irc_NICK(self, prefix, params):
