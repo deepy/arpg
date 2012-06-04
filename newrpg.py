@@ -117,9 +117,6 @@ class RPGBot(irc.IRCClient):
         self.crusaders = []
         self.arbiters = []
         
-        self.lawenfos = []
-        self.rogues = []
-        
         self.msg_channel = 1
         self.msg_user = 1
         
@@ -381,16 +378,7 @@ class RPGBot(irc.IRCClient):
         try:
             self.arbiters.remove(user)
         except ValueError:
-            pass
-        try:
-            self.lawenfos.remove(user)
-        except ValueError:
-            pass
-        try:
-            self.rogues.remove(user)
-        except ValueError:
-            pass
-        
+            pass        
         #self.users_html() TEMP OFF
         self.rpg_randomfight()
 
@@ -412,66 +400,10 @@ class RPGBot(irc.IRCClient):
                     self.arbiters.append(user)
                 if self.resultsbuf.school != 0:
                     self.school[user] = int(self.resultsbuf.school)
-                self.rpg_slogin(self.resultsbuf)
                 print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
                 self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
                 self.rpg_randomfight()
             session.close()
-
-    def rpg_slogin(self, results):
-        self.sloginbuf = self.rpg_checkfeats(int(results.cls))
-        if "lawenforce" in self.sloginbuf:
-            self.lawenfos.append(str(results.name))
-        if "rogue" in self.sloginbuf:
-            self.rogues.append(str(results.name))
-
-    def rpg_special(self, user, pclass):
-        """ Let's the user do his/her special move! """
-        c.execute("SELECT abtime, gold, level FROM users WHERE name=:user", { 'user':user })
-        self.timebuf = c.fetchone()
-        self.alawenfos = len(self.lawenfos)
-        self.arogues = len(self.rogues)
-        print self.timebuf
-        print time()
-        if time() - self.timebuf[0] >= 43200:
-            if pclass == 15:
-                if self.alawenfos == 0:
-                    self.alawenfos = 1
-                    self.arogues = 10
-                if self.arogues == 0:
-                    self.awlawenfos = 10
-                    self.arogues = 1
-                if self.alawenfos / self.arogues >= 0.5:
-                    return "Too many officers."
-                else:
-                    self.randompick = self.rpg_pickrandom()
-                    #if self.randompick[0] == user:
-                    if self.randompick[0] == user:
-                        return "Nobody to steal from."
-                    else:
-                        c.execute("UPDATE USERS set abtime=:time WHERE name=:user", {'time':time(), 'user':user })
-                        conn.commit()
-                        c.execute("SELECT level, gold, name FROM users WHERE name=:user", { 'user':self.randompick[0] })
-                        self.sbuf = c.fetchone()
-                        if (int(self.sbuf[0]) * 50) >= int(self.sbuf[1]):
-                            self.debuff = ((int(self.sbuf[0]) * 50) / 2)
-                        else:
-                            self.debuff = (int(self.sbuf[0]) * 50)
-                        c.execute("UPDATE USERS set gold=:gold WHERE name=:user", { 'gold':int(self.timebuf[1])+self.debuff, 'user':user} )
-                        c.execute("UPDATE USERS set gold=:gold WHERE name=:user", { 'gold':int(self.sbuf[1])-self.debuff, 'user':self.sbuf[2] })
-                        conn.commit()
-                        self.notify( "%s stole %s gold from %s." % str(user), int(self.debuff), str(self.sbuf[2]) )
-                        self.returnstring = "Stole %s gold from %s." % (int(self.debuff), str(self.sbuf[2]))
-                        return self.returnstring
-            else:
-                c.execute("UPDATE USERS set abtime=:time WHERE name=:user", {'time':time(), 'user':user })
-                c.execute("UPDATE USERS set gold=:gold WHERE name=:user", { 'gold':int(self.timebuf[1])+int(self.timebuf[2]*5), 'user':user} )
-                conn.commit()
-                return "Worked hard, got gold."
-                
-            return "Ready!"
-        else:
-            return "Not ready yet!"
 
     def rpg_checkclass(self, pclass):
         """ Returns name of classnumber. """
@@ -849,14 +781,8 @@ class RPGBot(irc.IRCClient):
                 reactor.stop()
         elif (self.messbuf[0] == "online"):
             self.msg(user, str(self.users))
-        elif (self.messbuf[0] == "fonline"):
-            self.msg(user, self.crusaders)
-            self.msg(user, self.arbiters)
         elif (self.messbuf[0] == "sonline"):
             self.msg(user, str(self.school))
-        elif (self.messbuf[0] == "law"):
-            self.msg(user, self.lawenfos)
-            self.msg(user, self.rogues)
         elif (self.messbuf[0] == "login"):
             #print self.whois(user)
             self.whois(user)
@@ -916,9 +842,6 @@ class RPGBot(irc.IRCClient):
             self.msg(user, self.rpg_getequipment(3, self.messbuf[1]))
         elif (self.messbuf[0] == "online"):
             self.msg(user, int(time()) - self.boot)
-        elif (self.messbuf[0] == "special"):
-            #self.msg(user, self.rpg_special(user, self.rpg_getclass(user)))
-            self.msg(user, "Sorry, temporarily down.")
         elif (self.messbuf[0] == "shop"):
             self.msg(user, "Shop is being revamped.")
             #try:
