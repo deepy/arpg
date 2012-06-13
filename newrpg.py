@@ -403,22 +403,8 @@ class RPGBot(irc.IRCClient):
                 legitclbuff += self.rpg_checkclass(int(legitclass)) + " "
             return legitclbuff
 
-    def rpg_getequipment(self, type, user):
-        """ Returns equipment score. """
-        c.execute("SELECT weapon, armor from USERS where NAME=:user", { 'user':user })
-        self.eqbuf = c.fetchone()
-        if type == 1:
-            return self.eqbuf[0]
-        if type == 2:
-            return self.eqbuf[1]
-        if type == 3:
-            return self.eqbuf[0] + self.eqbuf[1]
-
     def rpg_awardexp(self, user, exp):
         """ Awards user experience. """
-        #c.execute("SELECT exp, charisma, level, clown_level FROM users WHERE name=:user", { 'user':user })
-        #self.expbuf = c.fetchone()
-        #c.execute("UPDATE users SET exp=:exp WHERE name=:user", { 'exp':exp+self.expbuf[0], 'user':user })
         session = Session()
         self.users[user].exp += exp
         if self.rpg_checklevel(self.users[user].level, exp+self.users[user].exp) == 1:
@@ -739,10 +725,6 @@ class RPGBot(irc.IRCClient):
             self.msg(user, self.rpg_getlegitclass(self.messbuf[1], 1))
         elif (self.messbuf[0] == "aglcl"):
             self.msg(user, self.rpg_getlegitclass(self.messbuf[1], 2))
-        elif (self.messbuf[0] == "aeqc"):
-            self.msg(user, self.rpg_getequipment(1, self.messbuf[1]))
-            self.msg(user, self.rpg_getequipment(2, self.messbuf[1]))
-            self.msg(user, self.rpg_getequipment(3, self.messbuf[1]))
         elif (self.messbuf[0] == "online"):
             self.msg(user, int(time()) - self.boot)
         elif (self.messbuf[0] == "html"):
