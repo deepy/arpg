@@ -268,15 +268,12 @@ class RPGBot(irc.IRCClient):
         self.fightbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
         self.ranthrow = random.randint(0,10)
         if (self.ranthrow == 0):
-            #c.execute("UPDATE users SET gold=:gold, exp=:exp WHERE name=:user", { 'gold':0, 'exp':self.fightbuf[0]+2, 'user':user })
             pass
         elif (self.ranthrow < 6):
             #self.msg(channel, "You lost.")
-            #c.execute("UPDATE users SET gold=:gold, exp=:exp WHERE name=:user", { 'gold':self.fightbuf[1], 'exp':self.fightbuf[0]+self.fightbuf[2]+self.fightbuf[3], 'user':user })
             self.fightbuf.exp += self.fightbuf.weapon+self.fightbuf.armor
         else:
             #self.msg(channel, "You won!")
-            #c.execute("UPDATE users SET gold=:gold, exp=:exp WHERE name=:user", { 'gold':(self.fightbuf[1]+25+random.randint(0, 100)), 'exp':self.fightbuf[0]+100, 'user':user })
             self.fightbuf.gold += 25+random.randint(0, 100)
             self.fightbuf.exp += 100
         session.commit()
@@ -408,7 +405,6 @@ class RPGBot(irc.IRCClient):
         session = Session()
         self.users[user].exp += exp
         if self.rpg_checklevel(self.users[user].level, exp+self.users[user].exp) == 1:
-            #c.execute("UPDATE users SET level=:level WHERE name=:user", { 'level':self.talkbuf[2]+1, 'user':user })
             self.users[user].level += 1
             print "%s is now level: %s" % (user, self.users[user].level)
             if self.msg_user == 1:
@@ -424,8 +420,6 @@ class RPGBot(irc.IRCClient):
         session = Session()
         try:
             if self.users[user]:
-                #c.execute("SELECT clown_level, clchange from USERS where NAME=:user", { 'user':user })
-                #self.userbuf = c.fetchone()f
                 if self.users[user].clown_level > self.users[user].clchange:
                     if nclass in self.rpg_getlegitclass(user, 1):
                         self.users[user].cls = nclass
@@ -592,26 +586,6 @@ class RPGBot(irc.IRCClient):
         #self.factions_html() TEMP OFF
         #self.html_m_online(self.failbuffer.split(" ")) TEMP OFF
 
-    def factions_html(self):
-        self.f = open("%s/%s/factions.txt" % (template_output, self.factory.network), "w")
-        self.buffer = "Crusaders:\n"
-        c.execute("SELECT name, level, clown_level, class, gold from USERS WHERE faction=1 ORDER by level DESC")
-        for row in c:
-            if row[3] != 0:
-                self.classbuff = self.rpg_checkclass(row[3])+" "
-            #Gold formula: int(round(n, 1 - int(math.log10(n))))
-            self.buffer += "%s%s, level: %s.%s (%s)\n" % (self.classbuff, row[0], row[1], row[2], int(float("%.1e" % row[4])))
-        self.buffer += "\nArbiters:\n"
-        c.execute("SELECT name, level, clown_level, class, gold from USERS WHERE faction=2 ORDER by level DESC")
-        for row in c:
-            if row[3] != 0:
-                self.classbuff = self.rpg_checkclass(row[3])+" "
-            #Gold formula: int(round(n, 1 - int(math.log10(n))))
-            self.buffer += "%s%s, level: %s.%s (%s)\n" % (self.classbuff, row[0], row[1], row[2], int(float("%.1e" % row[4])))
-        self.f.write(self.buffer)
-        self.f.close()
-        self.html_m_factions(self.buffer)
-
     def html_mobile(self):
         pass
 
@@ -628,18 +602,11 @@ class RPGBot(irc.IRCClient):
         self.f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=userlist ))
         self.f.close()
 
-
-    def html_m_factions(self, factionlist):
-        self.f = open("%s/m/%s/factions.html" % (template_output, self.factory.network), "w")
-        self.f.write(template.render(title="Factions", navigation= [listitem("index.html", "Home")], pretext=factionlist ))
-        self.f.close()
-
     def html_fulldump(self):
         session = Session()
         self.f = open("%s/%s/users.txt" % (template_output, self.factory.network), "w")
         self.buffer = "IRCRPG players:\n"
         self.classbuff = ""
-        #c.execute("SELECT name, level, clown_level, class, gold from USERS ORDER by level DESC")
         for row in session.query(User).filter_by(network=self.factory.network).order_by(User.level.desc()).all():
             if row.cls != 0:
                 self.classbuff = self.rpg_checkclass(row.cls)+" "
