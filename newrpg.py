@@ -453,13 +453,13 @@ class RPGBot(irc.IRCClient):
             self.msg("#arpg", message)
 
     def rpg_changeschool(self, user, message):
-        """ Change school. """
+        """ Change Guild. """
         if user in self.users:
-            if message == "arcane":
+            if message == "Mages":
                 choice = 1
-            elif message == "gym":
+            elif message == "Warriors":
                 choice = 2
-            elif message == "streets":
+            elif message == "Thieves":
                 choice = 3
             else:
                 return "Invalid choice."
@@ -469,7 +469,7 @@ class RPGBot(irc.IRCClient):
                 session.add(self.users[user])
                 session.commit()
                 session.close()
-                return "Updated school choice."
+                return "Updated Guild choice."
 
     def rpg_checklevel(self, level, exp):
         """ Harcoded level tables. """
@@ -670,11 +670,11 @@ class RPGBot(irc.IRCClient):
             except ValueError:
                 session.close()
                 self.msg(user, "You are allowed to change class once per every cl.")
-        elif (self.messbuf[0] == "school"):
+        elif (self.messbuf[0] == "guild"):
             try:
                 self.msg(user, self.rpg_changeschool(user, self.messbuf[1]))
             except IndexError:
-                self.msg(user, "Error, valid choices are: arcane, gym, streets.")
+                self.msg(user, "Error, valid choices are: mages, warriors, thieves.")
         elif (self.messbuf[0] == "alogout"):
             if user == "Cat":
                 self.rpg_logout(self.messbuf[1])
@@ -699,7 +699,7 @@ class RPGBot(irc.IRCClient):
                 self.html_fulldump()
         else:
             if user.find("Serv") == -1:
-                self.msg(user, "Commands are: register, classes, school, class")
+                self.msg(user, "Commands are: register, classes, guild, class")
         session.close() #DEBUG ATTEMPT
 
 
