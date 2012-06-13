@@ -650,10 +650,6 @@ class RPGBot(irc.IRCClient):
             self.msg(user, str(self.school))
         elif (self.messbuf[0] == "login"):
             self.whois(user)
-        elif (self.messbuf[0] == "logout"):
-            #print self.whois(user)
-            self.rpg_logout(user)
-            self.msg(user, "Done")
         elif (self.messbuf[0] == "classes"):
             try:
                 if self.users[user]:
@@ -671,23 +667,12 @@ class RPGBot(irc.IRCClient):
                 self.msg(user, self.rpg_changeschool(user, self.messbuf[1]))
             except IndexError:
                 self.msg(user, "Error, valid choices are: arcane, gym, streets.")
-        elif (self.messbuf[0] == "alogin"):
-            if user == "Cat":
-                self.rpg_login(self.messbuf[1])
-        elif (self.messbuf[0] == "amlogin"):
-            if user == "Cat":
-                self.sendLine("WHO %s" % self.factory.channel)
-            elif user == "Deepy":
-                self.sendLine("WHO %s" % self.factory.channel)
-                print self.factory.channel
         elif (self.messbuf[0] == "alogout"):
             if user == "Cat":
                 self.rpg_logout(self.messbuf[1])
         elif (self.messbuf[0] == "achschool"):
             if user == "Cat":
                 self.rpg_changeschool(user, self.messbuf[1])
-        elif (self.messbuf[0] == "acheck"):
-            self.msg(user, self.rpg_checkfeats(int(self.messbuf[1])))
         elif (self.messbuf[0] == "aglc"):
             self.msg(user, self.rpg_getlegitclass(self.messbuf[1], 1))
         elif (self.messbuf[0] == "aglcl"):
