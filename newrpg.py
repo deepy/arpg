@@ -295,8 +295,6 @@ class RPGBot(irc.IRCClient):
     def irc_WHOISCHANNELS(self, prefix, params):
         """Called when the WHOIS results are returned?"""
         pass
-        #if "#unix" in params:
-            #self.rpg_login(
 
     def rpg_pickrandom(self):
         if len(self.users) >= 1:
@@ -820,12 +818,6 @@ class RPGBot(irc.IRCClient):
             self.msg(user, self.rpg_getequipment(3, self.messbuf[1]))
         elif (self.messbuf[0] == "online"):
             self.msg(user, int(time()) - self.boot)
-        elif (self.messbuf[0] == "shop"):
-            self.msg(user, "Shop is being revamped.")
-            #try:
-            #    self.rpg_shop(user, self.messbuf[1])
-            #except (IndexError):
-            #    self.rpg_shop(user, "")
         elif (self.messbuf[0] == "html"):
             if user == "Cat":
                 self.users_html()
@@ -838,7 +830,7 @@ class RPGBot(irc.IRCClient):
                 self.html_fulldump()
         else:
             if user.find("Serv") == -1:
-                self.msg(user, "Commands are: register, login, shop, classes, school, class")
+                self.msg(user, "Commands are: register, classes, school, class")
         session.close() #DEBUG ATTEMPT
 
 
