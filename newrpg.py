@@ -103,7 +103,7 @@ Base.metadata.create_all(db) #Uncomment this on the first run.
 class RPGBot(irc.IRCClient):  
     nickname = "RPG"
     versionName = "RPGBot"
-    versionNum = "(Alchemist)"
+    versionNum = "(Guildbars)"
     fingerReply = "RPGBot (rpg@armchairs.be) - http://x13.se/~deepy/arpg/readme.txt"
     boot = int(time())
 
@@ -117,8 +117,15 @@ class RPGBot(irc.IRCClient):
         self.crusaders = []
         self.arbiters = []
         
+        self.nextfight = 0
+        
         self.msg_channel = 1
         self.msg_user = 1
+        
+        self.weapons = ["club","magic staff","Scroll of Protection","Wall Street Journal",
+                        "+8 Divine Sword of Basketweaving","cursed urn","dumpster truck","wooden plank",
+                        "Missed Appointment","HTML Validator"]
+        self.actions = ["beat down","mutilated","demolished","lightly injured","barely scratched","violated"]
         
         # abuse!
         #self.twat = twitter.Api(username='activerpg', password='meowkitt')
@@ -138,6 +145,15 @@ class RPGBot(irc.IRCClient):
         
         self.factions[10] = ("buffalop") #Udderlorn (Buffaloops)
         self.factions[15] = ("lizkoot") #V'Gaes (Liz'Koots)
+
+    def cron(self):
+        print self.nextfight
+        if self.nextfight <= int(time()):
+            self.rpg_randomfight()
+            self.nextfight = int(time()+14400)
+
+    def pump(self):
+        self.cron() #TODO: weakrefs.
 
     def connectionMade(self):
         self.init()
@@ -201,8 +217,8 @@ class RPGBot(irc.IRCClient):
                             self.users[user].charisma += 1
                             print "%s gained a charisma!" % user
                             self.notify("%s gained a charisma!" % str(user))
-                    if random.randint(0,35) == 18:
-                        self.rpg_randomfight()
+                    self.pump()
+                    #self.rpg_randomfight()
                     session.add(self.users[user])
                     session.commit()
                     session.close()
@@ -253,29 +269,15 @@ class RPGBot(irc.IRCClient):
         """Called when the WHOIS results are returned?"""
         pass
 
-    def rpg_pickrandom(self):
-        if len(self.users) >= 1:
-            return random.choice(self.users.items())
-        else:
-            return 0
-
     def rpg_randomfight(self):
-        if len(self.users) >= 1:
-            self.rpg_fight(self.rpg_pickrandom()[0])
+        if len(self.users) > 1:
+            self.rpg_fight(random.sample(self.users.items(), 2))
 
     def rpg_fight(self, user):
         session = Session()
-        self.fightbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
-        self.ranthrow = random.randint(0,10)
-        if (self.ranthrow == 0):
-            pass
-        elif (self.ranthrow < 6):
-            #self.msg(channel, "You lost.")
-            self.fightbuf.exp += self.fightbuf.weapon+self.fightbuf.armor
-        else:
-            #self.msg(channel, "You won!")
-            self.fightbuf.gold += 25+random.randint(0, 100)
-            self.fightbuf.exp += 100
+        #self.fightbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
+        if random.randint(0,1) == 1:
+            self.notify("%s %s %s with a %s." % ( str(user[0][0]), random.choice(self.actions), str(user[1][0]), random.choice(self.weapons) ))
         session.commit()
         session.close()
 
@@ -408,7 +410,7 @@ class RPGBot(irc.IRCClient):
             self.users[user].level += 1
             print "%s is now level: %s" % (user, self.users[user].level)
             if self.msg_user == 1:
-                self.msg(user, "Congratulations! You gained level %s" % self.users[user].level)
+                self.notice(user, "Congratulations! You gained level %s" % self.users[user].level)
             self.notify("%s gained level %s!" % (str(user), str(self.users[user].level)))
             self.users_html()
         session.merge(self.users[user])
@@ -644,6 +646,12 @@ class RPGBot(irc.IRCClient):
         elif (self.messbuf[0] == "die"):
             if user == "Cat":
                 reactor.stop()
+        elif (self.messbuf[0] == "fight"):
+            if user == "Cat":
+                self.rpg_randomfight()
+        elif (self.messbuf[0] == "pump"):
+            if user == "Cat":
+                self.pump()
         elif (self.messbuf[0] == "online"):
             self.msg(user, str(self.users))
         elif (self.messbuf[0] == "sonline"):
