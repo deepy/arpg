@@ -33,37 +33,6 @@ env = Environment(loader=FileSystemLoader(Config.get("web", "templatedirectory")
 template = env.get_template('mobile.tpl')
 template_output = Config.get("web", "outputdirectory")
 
-#sqlite start
-conn = sqlite3.connect('rpgame.db')
-c = conn.cursor()
-#sqlite end
-
-#Troubleshooting start
-
-#import logging
-
-#mypooly = logging.basicConfig(filename='pool.log',level=logging.INFO)
-#mypooly.getLogger('sqlalchemy.pool').setLevel(logging.INFO)
-
-#mycalls = logging.basicConfig(filename='calls.log',level=logging.INFO)
-#mycalls.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
-#logger = logging.getLogger('sqlalchemy.pool')
-#hdlr = logging.FileHandler('pool.log')
-#formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-#hdlr.setFormatter(formatter)
-#logger.addHandler(hdlr)
-#logger.setLevel(logging.INFO)
-
-#logger2 = logging.getLogger('sqlalchemy.engine')
-#hdlr2 = logging.FileHandler('calls.log')
-#formatter2 = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-#hdlr2.setFormatter(formatter2)
-#logger2.addHandler(hdlr2)
-#logger2.setLevel(logging.INFO)
-
-#Troubleshooting end
-
 #sqlalchy start
 db = create_engine(Config.get("db", "string"), echo=False)
 Session = sessionmaker(bind=db,expire_on_commit=False)
@@ -148,9 +117,6 @@ class RPGBot(irc.IRCClient):
         self.crusaders = []
         self.arbiters = []
         
-        self.lawenfos = []
-        self.rogues = []
-        
         self.msg_channel = 1
         self.msg_user = 1
         
@@ -188,6 +154,7 @@ class RPGBot(irc.IRCClient):
         self.mode(self.nickname, True, "R")
         self.join(self.factory.channel)
         self.join("arpg")
+        self.join("#crusaders,#arbiters")
 
     def irc_RPL_WHOISCHANNELS(self, prefix, params):
         nick = params[1]
@@ -211,13 +178,6 @@ class RPGBot(irc.IRCClient):
     def privmsg(self, user, channel, msg):
         """This will get called when the bot receives a message."""
         user = user.split('!', 1)[0]
-        #Handled elsewhere
-        #print "<%s> %s" % (user, msg)
-        
-        #Split message to find commands.
-        #self.messbuf = msg.split(" ", 1)
-        #self.whois(user)
-
         # Check to see if they're sending me a private message
         if channel.lower() == self.nickname.lower():
             try:
@@ -250,9 +210,6 @@ class RPGBot(irc.IRCClient):
             except (ValueError, KeyError):
                 session.close()
                 pass #DEBUG ATTEMPT
-            #print self.messbuf[1]
-        #else:
-        #    if (self.messbuf[0] == "!fighwf12tg234t3gtg32t"):
         return
 
     def irc_NICK(self, prefix, params):
@@ -304,7 +261,7 @@ class RPGBot(irc.IRCClient):
 
     def rpg_randomfight(self):
         if len(self.users) >= 1:
-            self.rpg_fight(self.rpg_pickrandom()[0], self.rpg_pickrandom()[0])
+            self.rpg_fight(self.rpg_pickrandom()[0])
 
     def rpg_fight(self, user):
         session = Session()
@@ -322,7 +279,6 @@ class RPGBot(irc.IRCClient):
             #c.execute("UPDATE users SET gold=:gold, exp=:exp WHERE name=:user", { 'gold':(self.fightbuf[1]+25+random.randint(0, 100)), 'exp':self.fightbuf[0]+100, 'user':user })
             self.fightbuf.gold += 25+random.randint(0, 100)
             self.fightbuf.exp += 100
-        #conn.commit()
         session.commit()
         session.close()
 
@@ -338,16 +294,7 @@ class RPGBot(irc.IRCClient):
         try:
             self.arbiters.remove(user)
         except ValueError:
-            pass
-        try:
-            self.lawenfos.remove(user)
-        except ValueError:
-            pass
-        try:
-            self.rogues.remove(user)
-        except ValueError:
-            pass
-        
+            pass        
         #self.users_html() TEMP OFF
         self.rpg_randomfight()
 
@@ -369,18 +316,10 @@ class RPGBot(irc.IRCClient):
                     self.arbiters.append(user)
                 if self.resultsbuf.school != 0:
                     self.school[user] = int(self.resultsbuf.school)
-                self.rpg_slogin(self.resultsbuf)
                 print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
                 self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
                 self.rpg_randomfight()
             session.close()
-
-    def rpg_slogin(self, results):
-        self.sloginbuf = self.rpg_checkfeats(int(results.cls))
-        if "lawenforce" in self.sloginbuf:
-            self.lawenfos.append(str(results.name))
-        if "rogue" in self.sloginbuf:
-            self.rogues.append(str(results.name))
 
     def rpg_checkclass(self, pclass):
         """ Returns name of classnumber. """
@@ -490,7 +429,6 @@ class RPGBot(irc.IRCClient):
                 self.msg(user, "Congratulations! You gained level %s" % self.users[user].level)
             self.notify("%s gained level %s!" % (str(user), str(self.users[user].level)))
             self.users_html()
-        #conn.commit()
         session.merge(self.users[user])
         session.commit()
         session.close()
@@ -504,8 +442,6 @@ class RPGBot(irc.IRCClient):
                 #self.userbuf = c.fetchone()f
                 if self.users[user].clown_level > self.users[user].clchange:
                     if nclass in self.rpg_getlegitclass(user, 1):
-                        #c.execute("UPDATE users SET class=:newclass WHERE NAME=:user", { 'user':user, 'newclass':nclass })
-                        #conn.commit()
                         self.users[user].cls = nclass
                         self.msg(user, "Congratulations, you are now a %s." % self.rpg_checkclass(nclass))
                         self.notify("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))) )
@@ -536,15 +472,22 @@ class RPGBot(irc.IRCClient):
 
     def rpg_changeschool(self, user, message):
         """ Change school. """
-        c.execute("SELECT statname from stats WHERE name=:user AND statname=:statname", { 'user':user, 'statname':int(message) })
-        if c.fetchone() == None:
-            self.msg(user, "Changing school.")
-            c.execute("INSERT into stats (name, statname, level, progression) values(:user, :school, 0, 0 )", { 'user':user, 'school':int(message) })
-        else:
-            self.msg(user, "Changing school.")
-        c.execute("UPDATE users SET school=:school WHERE name=:user", {'user':user, 'school':int(message) })
-        self.school[user] = int(message)
-        conn.commit()
+        if user in self.users:
+            if message == "arcane":
+                choice = 1
+            elif message == "gym":
+                choice = 2
+            elif message == "streets":
+                choice = 3
+            else:
+                return "Invalid choice."
+            if choice:
+                self.school[user] = choice
+                session = Session()
+                session.add(self.users[user])
+                session.commit()
+                session.close()
+                return "Updated school choice."
 
     def rpg_checklevel(self, level, exp):
         """ Harcoded level tables. """
@@ -745,24 +688,15 @@ class RPGBot(irc.IRCClient):
                 self.sendLine("WHO %s" % self.factory.channel)
             else:
                 self.msg(user, "Already registered.")
-            conn.commit()
         elif (self.messbuf[0] == "die"):
             if user == "Cat":
                 reactor.stop()
         elif (self.messbuf[0] == "online"):
             self.msg(user, str(self.users))
-        elif (self.messbuf[0] == "fonline"):
-            self.msg(user, self.crusaders)
-            self.msg(user, self.arbiters)
         elif (self.messbuf[0] == "sonline"):
             self.msg(user, str(self.school))
-        elif (self.messbuf[0] == "law"):
-            self.msg(user, self.lawenfos)
-            self.msg(user, self.rogues)
         elif (self.messbuf[0] == "login"):
-            #print self.whois(user)
             self.whois(user)
-            #self.rpg_login(user, 0)
         elif (self.messbuf[0] == "logout"):
             #print self.whois(user)
             self.rpg_logout(user)
@@ -773,7 +707,6 @@ class RPGBot(irc.IRCClient):
                     self.msg(user, self.rpg_getlegitclass(user, 2))
             except KeyError:
                 session.close()
-                #pass #DEBUG ATTEMPT
         elif (self.messbuf[0] == "class"):
             try:
                 self.rpg_changeclass(user, self.rpg_classname(self.messbuf[1]))
@@ -782,15 +715,9 @@ class RPGBot(irc.IRCClient):
                 self.msg(user, "You are allowed to change class once per every cl.")
         elif (self.messbuf[0] == "school"):
             try:
-                if self.messbuf[1] == "arcane":
-                    self.rpg_changeschool(user, 1)
-                elif self.messbuf[1] == "gym":
-                    self.rpg_changeschool(user, 2)
-                elif self.messbuf[1] == "streets":
-                    self.rpg_changeschool(user, 3)
+                self.msg(user, self.rpg_changeschool(user, self.messbuf[1]))
             except IndexError:
-                session.close()
-                self.msg(user, "Possible choices are: arcane, gym, streets")
+                self.msg(user, "Error, valid choices are: arcane, gym, streets.")
         elif (self.messbuf[0] == "alogin"):
             if user == "Cat":
                 self.rpg_login(self.messbuf[1])
