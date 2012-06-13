@@ -607,16 +607,6 @@ class RPGBot(irc.IRCClient):
                 legitclbuff += self.rpg_checkclass(int(legitclass)) + " "
             return legitclbuff
 
-    def rpg_getclass(self, user):
-        """ Returns class number for user. """
-        c.execute("SELECT class from USERS where NAME=:user", { 'user':user })
-        return c.fetchone()[0]
-
-    #def rpg_getgold(self, user):
-    #    """ Returns players gold. """
-    #    c.execute("SELECT gold from USERS where NAME=:user", { 'user':user })
-    #    return c.fetchone()[0]
-
     def rpg_getequipment(self, type, user):
         """ Returns equipment score. """
         c.execute("SELECT weapon, armor from USERS where NAME=:user", { 'user':user })
@@ -970,9 +960,6 @@ class RPGBot(irc.IRCClient):
             self.msg(user, self.rpg_getequipment(3, self.messbuf[1]))
         elif (self.messbuf[0] == "online"):
             self.msg(user, int(time()) - self.boot)
-        elif (self.messbuf[0] == "special"):
-            #self.msg(user, self.rpg_special(user, self.rpg_getclass(user)))
-            self.msg(user, "Sorry, temporarily down.")
         elif (self.messbuf[0] == "shop"):
             self.msg(user, "Shop is being revamped.")
             #try:
