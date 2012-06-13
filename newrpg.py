@@ -1025,11 +1025,11 @@ class RPGBotFactory(protocol.ClientFactory):
 
 
 if __name__ == '__main__':
-    f = RPGBotFactory("ArloriaNET", "RPG2", "#rpgtest")
+    f = RPGBotFactory("ArloriaNET", Config.get("irc", "nickname"), Config.get("irc", "channel"))
     #f2 = RPGBotFactory("Coldfront", "RPG","#rpg")
     
     # connect factory to this host and port
-    reactor.connectTCP("irc.arloria.net", 6667, f)
+    reactor.connectTCP(Config.get("irc", "server"), 6667, f)
     #reactor.connectTCP("irc.coldfront.net", 6667, f2)
     # run bot
     reactor.run()
