@@ -218,7 +218,6 @@ class RPGBot(irc.IRCClient):
                             print "%s gained a charisma!" % user
                             self.notify("%s gained a charisma!" % str(user))
                     self.pump()
-                    #self.rpg_randomfight()
                     session.add(self.users[user])
                     session.commit()
                     session.close()
@@ -295,7 +294,6 @@ class RPGBot(irc.IRCClient):
         except ValueError:
             pass        
         #self.users_html() TEMP OFF
-        self.rpg_randomfight()
 
     def rpg_login(self, user):
         try:
@@ -317,7 +315,6 @@ class RPGBot(irc.IRCClient):
                     self.school[user] = int(self.resultsbuf.school)
                 print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
                 self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
-                self.rpg_randomfight()
             session.close()
 
     def rpg_checkclass(self, pclass):
