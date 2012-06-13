@@ -597,16 +597,15 @@ class RPGBot(irc.IRCClient):
             return "none"
 
     def rpg_getlegitclass(self, user, type):
-        #c.execute("SELECT classes from USERS where NAME=:user", { 'user':user })
-        self.legitclasses = [int(legclass) for legclass in user.classes.split(',')]
+        legitclasses = [int(legclass) for legclass in self.users[user].classes.split(',')]
         
-        self.legitclbuff = ""
+        legitclbuff = ""
         if type == 1:
-            return self.legitclasses
+            return legitclasses
         if type == 2:
-            for legitclass in self.legitclasses:
-                self.legitclbuff += self.rpg_checkclass(int(legitclass)) + " "
-            return self.legitclbuff
+            for legitclass in legitclasses:
+                legitclbuff += self.rpg_checkclass(int(legitclass)) + " "
+            return legitclbuff
 
     def rpg_getclass(self, user):
         """ Returns class number for user. """
