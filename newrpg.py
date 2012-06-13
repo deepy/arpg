@@ -476,54 +476,6 @@ class RPGBot(irc.IRCClient):
         if "rogue" in self.sloginbuf:
             self.rogues.append(str(results.name))
 
-    def rpg_special(self, user, pclass):
-        """ Let's the user do his/her special move! """
-        c.execute("SELECT abtime, gold, level FROM users WHERE name=:user", { 'user':user })
-        self.timebuf = c.fetchone()
-        self.alawenfos = len(self.lawenfos)
-        self.arogues = len(self.rogues)
-        print self.timebuf
-        print time()
-        if time() - self.timebuf[0] >= 43200:
-            if pclass == 15:
-                if self.alawenfos == 0:
-                    self.alawenfos = 1
-                    self.arogues = 10
-                if self.arogues == 0:
-                    self.awlawenfos = 10
-                    self.arogues = 1
-                if self.alawenfos / self.arogues >= 0.5:
-                    return "Too many officers."
-                else:
-                    self.randompick = self.rpg_pickrandom()
-                    #if self.randompick[0] == user:
-                    if self.randompick[0] == user:
-                        return "Nobody to steal from."
-                    else:
-                        c.execute("UPDATE USERS set abtime=:time WHERE name=:user", {'time':time(), 'user':user })
-                        conn.commit()
-                        c.execute("SELECT level, gold, name FROM users WHERE name=:user", { 'user':self.randompick[0] })
-                        self.sbuf = c.fetchone()
-                        if (int(self.sbuf[0]) * 50) >= int(self.sbuf[1]):
-                            self.debuff = ((int(self.sbuf[0]) * 50) / 2)
-                        else:
-                            self.debuff = (int(self.sbuf[0]) * 50)
-                        c.execute("UPDATE USERS set gold=:gold WHERE name=:user", { 'gold':int(self.timebuf[1])+self.debuff, 'user':user} )
-                        c.execute("UPDATE USERS set gold=:gold WHERE name=:user", { 'gold':int(self.sbuf[1])-self.debuff, 'user':self.sbuf[2] })
-                        conn.commit()
-                        self.notify( "%s stole %s gold from %s." % str(user), int(self.debuff), str(self.sbuf[2]) )
-                        self.returnstring = "Stole %s gold from %s." % (int(self.debuff), str(self.sbuf[2]))
-                        return self.returnstring
-            else:
-                c.execute("UPDATE USERS set abtime=:time WHERE name=:user", {'time':time(), 'user':user })
-                c.execute("UPDATE USERS set gold=:gold WHERE name=:user", { 'gold':int(self.timebuf[1])+int(self.timebuf[2]*5), 'user':user} )
-                conn.commit()
-                return "Worked hard, got gold."
-                
-            return "Ready!"
-        else:
-            return "Not ready yet!"
-
     def rpg_checkclass(self, pclass):
         """ Returns name of classnumber. """
         if pclass == 0:
@@ -645,7 +597,7 @@ class RPGBot(irc.IRCClient):
             if self.users[user]:
                 #c.execute("SELECT clown_level, clchange from USERS where NAME=:user", { 'user':user })
                 #self.userbuf = c.fetchone()f
-                if user.clown_level > user.clchange:
+                if self.users[user].clown_level > self.users[user].clchange:
                     if nclass in self.rpg_getlegitclass(user, 1):
                         #c.execute("UPDATE users SET class=:newclass WHERE NAME=:user", { 'user':user, 'newclass':nclass })
                         #conn.commit()
