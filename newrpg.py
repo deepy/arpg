@@ -550,7 +550,6 @@ class RPGBot(irc.IRCClient):
 
     def rpg_getlegitclass(self, user, type):
         legitclasses = [int(legclass) for legclass in self.users[user].classes.split(',')]
-        
         legitclbuff = ""
         if type == 1:
             return legitclasses
@@ -601,8 +600,9 @@ class RPGBot(irc.IRCClient):
                     if nclass in self.rpg_getlegitclass(user, 1):
                         #c.execute("UPDATE users SET class=:newclass WHERE NAME=:user", { 'user':user, 'newclass':nclass })
                         #conn.commit()
+                        self.users[user].cls = nclass
                         self.msg(user, "Congratulations, you are now a %s." % self.rpg_checkclass(nclass))
-                        self.notify("%s is now a %s." % str(self.rpg_checkclass(nclass)))
+                        self.notify("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))) )
                         session.merge(self.users[user])
                         session.commit()
                         session.close()
