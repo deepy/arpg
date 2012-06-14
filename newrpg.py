@@ -3,7 +3,7 @@
 # twisted imports
 from twisted.words import service
 from twisted.words.protocols import irc
-from twisted.internet import reactor, protocol
+from twisted.internet import reactor, protocol, defer
 
 # system imports
 import random, time, sys, sqlite3
@@ -198,7 +198,14 @@ class RPGBot(irc.IRCClient):
         if channel.lower() == self.nickname.lower():
             try:
                 if self.users[user]:
-                    self.command(user, msg, 1)
+                    msg = msg.strip()
+                    command, sep, rest = msg.partition(' ')
+                    print command
+                    func = getattr(self, 'command_' + command, None)
+                    if func is None:
+                        self.command(user, msg, 1)
+                    d = defer.maybeDeferred(func, rest) #FIX
+                    #d.addErrback(self._show_error)
             except KeyError:
                 self.command(user, msg, 0)
         elif channel.lower() == self.factory.channel.lower():
@@ -267,6 +274,10 @@ class RPGBot(irc.IRCClient):
     def irc_WHOISCHANNELS(self, prefix, params):
         """Called when the WHOIS results are returned?"""
         pass
+
+    def userKicked(self, kickee, channel, kicker, message):
+        if channel == self.factory.channel:
+            self.rpg_logout(kickee)
 
     def rpg_randomfight(self):
         if len(self.users) > 1:
@@ -699,6 +710,9 @@ class RPGBot(irc.IRCClient):
                 self.msg(user, "Commands are: register, classes, guild, class")
         session.close() #DEBUG ATTEMPT
 
+    def command_test(self, rest):
+        print "yes"
+        print rest
 
 class listitem:
     href = "#"
