@@ -200,14 +200,21 @@ class RPGBot(irc.IRCClient):
                 if self.users[user]:
                     msg = msg.strip()
                     command, sep, rest = msg.partition(' ')
-                    print command
                     func = getattr(self, 'command_' + command, None)
                     if func is None:
                         self.command(user, msg, 1)
-                    d = defer.maybeDeferred(func, rest) #FIX
+                    else:
+                        d = defer.maybeDeferred(func, user, rest) #FIX
                     #d.addErrback(self._show_error)
             except KeyError:
-                self.command(user, msg, 0)
+                command, sep, rest = msg.partition(' ')
+                print command
+                func = getattr(self, 'command_' + command, None)
+                if func is None:
+                    self.command(user, msg, 0)
+                else:
+                    d = defer.maybeDeferred(func, user, rest) #FIX
+                    #d.addErrback(self._show_error)
         elif channel.lower() == self.factory.channel.lower():
             try:
                 if user in self.users:
@@ -643,15 +650,7 @@ class RPGBot(irc.IRCClient):
     def command(self, user, msg, status):
         session = Session()
         self.messbuf = msg.split(" ", 1)
-        if (self.messbuf[0] == "register"):
-            if not (session.query(User).filter_by(name=user, network=self.factory.network).first()):
-                self.msg(user, "Registering you.")
-                session.add(User(user, 1, 0, 1, 6, 1, 0, 0, 1, 1, 0,'1,3,5,6',0,int(time()),int(time()), 0, 0, self.factory.network))
-                session.commit()
-                self.sendLine("WHO %s" % self.factory.channel)
-            else:
-                self.msg(user, "Already registered.")
-        elif (self.messbuf[0] == "die"):
+        if (self.messbuf[0] == "die"):
             if user == "Cat":
                 reactor.stop()
         elif (self.messbuf[0] == "fight"):
@@ -695,24 +694,34 @@ class RPGBot(irc.IRCClient):
             self.msg(user, self.rpg_getlegitclass(self.messbuf[1], 2))
         elif (self.messbuf[0] == "online"):
             self.msg(user, int(time()) - self.boot)
-        elif (self.messbuf[0] == "html"):
-            if user == "Cat":
-                self.users_html()
-            elif user == "Deepy":
-                self.users_html()
-        elif (self.messbuf[0] == "fullhtml"):
-            if user == "Cat":
-                self.html_fulldump()
-            elif user == "Deepy":
-                self.html_fulldump()
         else:
             if user.find("Serv") == -1:
                 self.msg(user, "Commands are: register, classes, guild, class")
         session.close() #DEBUG ATTEMPT
 
-    def command_test(self, rest):
+    def command_test(self, user, rest):
         print "yes"
         print rest
+        print user
+
+    def command_html(self, user, rest):
+        if user == "Cat":
+            command = rest.partition(' ')
+            if command == "users":
+                self.users_html()
+            elif command == "full":
+                self.html_fulldump()
+
+    def command_register(self, user, rest):
+        session = Session()
+        if not (session.query(User).filter_by(name=user, network=self.factory.network).first()):
+            self.msg(user, "Registering you.")
+            session.add(User(user, 1, 0, 1, 6, 1, 0, 0, 1, 1, 0,'1,3,5,6',0,int(time()),int(time()), 0, 0, self.factory.network))
+            session.commit()
+            self.sendLine("WHO %s" % self.factory.channel)
+        else:
+            self.msg(user, "Already registered.")
+        session.close()
 
 class listitem:
     href = "#"
