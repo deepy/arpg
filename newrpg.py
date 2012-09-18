@@ -147,7 +147,6 @@ class RPGBot(irc.IRCClient):
         self.factions[15] = ("lizkoot") #V'Gaes (Liz'Koots)
 
     def cron(self):
-        print self.nextfight
         if self.nextfight <= int(time()):
             self.rpg_randomfight()
             self.nextfight = int(time()+14400)
@@ -314,10 +313,7 @@ class RPGBot(irc.IRCClient):
         #self.users_html() TEMP OFF
 
     def rpg_login(self, user):
-        try:
-            if self.users[user]:
-                pass
-        except KeyError:
+        if user not in self.users:
             session = Session()
             self.resultsbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
             if not (self.resultsbuf):
@@ -732,7 +728,7 @@ class listitem:
         self.caption = caption
 
 
-class RPGBotFactory(protocol.ClientFactory):
+class RPGBotFactory(protocol.ReconnectingClientFactory):
 
     # I like having a comment here
     protocol = RPGBot
