@@ -50,6 +50,19 @@ Base = declarative_base(bind=db)
 
 
 # sqlalchy ORM start
+class Names(Base):
+    __tablename__ = 'names'
+
+    id = Column(Integer, Sequence('name_id_seq'), primary_key=True)
+    parent = Column(String(40), nullable=False)
+    name = Column(String(40), nullable=False)
+    network = Column(String(40), nullable=False)
+
+    def __init__(self, parent, name, network):
+        self.parent = parent
+        self.name = name
+        self.network = network
+
 class User(Base):
     __tablename__ = 'users'
 
