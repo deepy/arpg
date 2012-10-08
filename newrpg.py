@@ -310,7 +310,6 @@ class RPGBot(irc.IRCClient):
             self.arbiters.remove(user)
         except ValueError:
             pass        
-        #self.users_html() TEMP OFF
 
     def rpg_login(self, user):
         if user not in self.users:
@@ -595,9 +594,7 @@ class RPGBot(irc.IRCClient):
         self.buffer += "\nLast updated: %s" % (strftime("%a, %d %b %Y %H:%M:%S", localtime()))
         self.f.write(self.buffer)
         self.f.close()
-        self.html_fulldump() #T!EMP OFF
-        #self.factions_html() TEMP OFF
-        #self.html_m_online(self.failbuffer.split(" ")) TEMP OFF
+        self.html_fulldump()
 
     def html_mobile(self):
         pass
@@ -652,9 +649,6 @@ class RPGBot(irc.IRCClient):
         elif (self.messbuf[0] == "fight"):
             if user == "Cat":
                 self.rpg_randomfight()
-        elif (self.messbuf[0] == "pump"):
-            if user == "Cat":
-                self.pump()
         elif (self.messbuf[0] == "online"):
             self.msg(user, str(self.users))
         elif (self.messbuf[0] == "sonline"):
@@ -662,11 +656,8 @@ class RPGBot(irc.IRCClient):
         elif (self.messbuf[0] == "login"):
             self.whois(user)
         elif (self.messbuf[0] == "classes"):
-            try:
-                if self.users[user]:
-                    self.msg(user, self.rpg_getlegitclass(user, 2))
-            except KeyError:
-                session.close()
+            if user in self.users:
+                self.msg(user, self.rpg_getlegitclass(user, 2))
         elif (self.messbuf[0] == "class"):
             try:
                 self.rpg_changeclass(user, self.rpg_classname(self.messbuf[1]))
