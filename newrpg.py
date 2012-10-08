@@ -700,12 +700,19 @@ class RPGBot(irc.IRCClient):
         print rest
         print user
 
+    def command_insert(self, user, rest):
+        if user == "Cat":
+            session = Session()
+            names = rest.split(' ')
+            session.add(Names(names[0], names[1], self.factory.network))
+            session.commit()
+
     def command_html(self, user, rest):
         if user == "Cat":
             command = rest.partition(' ')
-            if command == "users":
+            if command[0] == "users":
                 self.users_html()
-            elif command == "full":
+            elif command[0] == "full":
                 self.html_fulldump()
 
     def command_register(self, user, rest):
