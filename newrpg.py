@@ -125,10 +125,7 @@ class RPGBot(irc.IRCClient):
         self.weapons = ["club","magic staff","Scroll of Protection","Wall Street Journal",
                         "+8 Divine Sword of Basketweaving","cursed urn","dumpster truck","wooden plank",
                         "Missed Appointment","HTML Validator"]
-        self.actions = ["beat down","mutilated","demolished","lightly injured","barely scratched","violated"]
-        
-        # abuse!
-        #self.twat = twitter.Api(username='activerpg', password='meowkitt')
+        self.actions = ["beat down","mutilated","demolished","lightly injured","barely scratched","violated","laminated"]
         
         self.feats[2] = ("castlepermit","backstagecastle","minortax") #Noble
         self.feats[3] = ("minortax","lawenforce","warrior") #Citywatch
@@ -449,13 +446,12 @@ class RPGBot(irc.IRCClient):
                     self.msg(user, "You're not allowed to change class at the moment.")
         except KeyError:
             session.close()
-            #pass #DEBUG ATTEMPT
 
     def notify(self, message):
         """ One up the twatter. """
         if self.msg_channel == 1:
             self.msg("#arpg", message)
-        #print self.twat.PostUpdate(message).text
+        #TODO twitter.
 
     def notify2(self, message):
         """ Twitter free notification. """
@@ -741,9 +737,6 @@ class RPGBotFactory(protocol.ReconnectingClientFactory):
 if __name__ == '__main__':
     f = RPGBotFactory("ArloriaNET", Config.get("irc", "nickname"), Config.get("irc", "channel"))
     #f2 = RPGBotFactory("Coldfront", "RPG","#rpg")
-    
-    # connect factory to this host and port
     reactor.connectTCP(Config.get("irc", "server"), 6667, f)
     #reactor.connectTCP("irc.coldfront.net", 6667, f2)
-    # run bot
     reactor.run()
