@@ -63,6 +63,9 @@ class Names(Base):
         self.name = name
         self.network = network
 
+    def __repr__(self):
+        return "<Name('%s: %s (%s)')>" % (self.parent, self.name, self.network)
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -324,20 +327,33 @@ class RPGBot(irc.IRCClient):
     def rpg_login(self, user):
         if user not in self.users:
             session = Session()
-            self.resultsbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
+            self.resultsbuf = session.query(Names).filter_by(name=user, network=self.factory.network).first()
             if not (self.resultsbuf):
-                pass
+                self.resultsbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
+                if (self.resultsbuf):
+                    self.users[user] = self.resultsbuf
+                    self.users_html()
+                    if self.resultsbuf.faction == 1:
+                        self.crusaders.append(user)
+                    elif self.resultsbuf.faction == 2:
+                        self.arbiters.append(user)
+                    if self.resultsbuf.school != 0:
+                        self.school[user] = int(self.resultsbuf.school)
+                    print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
+                    self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
             else:
-                self.users[user] = self.resultsbuf
-                self.users_html()
-                if self.resultsbuf.faction == 1:
-                    self.crusaders.append(user)
-                elif self.resultsbuf.faction == 2:
-                    self.arbiters.append(user)
-                if self.resultsbuf.school != 0:
-                    self.school[user] = int(self.resultsbuf.school)
-                print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
-                self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
+                self.resultsbuf = session.query(User).filter_by(name=self.resultsbuf.parent, network=self.factory.network).first()
+                if (self.resultsbuf):
+                    self.users[user] = self.resultsbuf
+                    self.users_html()
+                    if self.resultsbuf.faction == 1:
+                        self.crusaders.append(user)
+                    elif self.resultsbuf.faction == 2:
+                        self.arbiters.append(user)
+                    if self.resultsbuf.school != 0:
+                        self.school[user] = int(self.resultsbuf.school)
+                    print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
+                    self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
             session.close()
 
     def rpg_checkclass(self, pclass):
