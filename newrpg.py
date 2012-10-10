@@ -192,14 +192,21 @@ class RPGBot(irc.IRCClient):
 
     def irc_307(self, prefix, params):
         if params[2] == 'is a registered nick':
-            self.rpg_login(params[1])
+            self.rpg_login(params[1], params[1])
         else:
             pass
 
+    def irc_354(self, prefix, params):
+        # FreeNode, WHO #channel %na
+        if self.factory.network.lower() == "freenode":
+            if params[2] != "0":
+                self.rpg_login(params[1], params[2])
+
     def irc_RPL_WHOREPLY(self, prefix, params):
         #print "WHO: %s (%s)" % (params, self.factory.network)
-        if "r" in params[6]:
-            self.rpg_login(params[5])
+        if self.factory.network.lower() != "freenode":
+            if "r" in params[6]:
+                self.rpg_login(params[5], params[5])
         #else:
         #    print "WHO: %s" % params
 
@@ -261,7 +268,7 @@ class RPGBot(irc.IRCClient):
         #self.whois(prefix.split('!')[0])
         #pass
         if params[0].lower() == self.factory.channel.lower():
-            self.sendLine("WHO %s" % self.factory.channel)
+            self.sendLine("WHO %s %%na" % self.factory.channel)
         elif params[0].lower() == "#crusaders".lower():
             try:
                 if self.users[prefix.split('!')[0]]:
@@ -324,36 +331,36 @@ class RPGBot(irc.IRCClient):
         except ValueError:
             pass        
 
-    def rpg_login(self, user):
-        if user not in self.users:
+    def rpg_login(self, nickname, user):
+        if nickname not in self.users:
             session = Session()
             self.resultsbuf = session.query(Names).filter_by(name=user, network=self.factory.network).first()
             if not (self.resultsbuf):
                 self.resultsbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
                 if (self.resultsbuf):
-                    self.users[user] = self.resultsbuf
+                    self.users[nickname] = self.resultsbuf
                     self.users_html()
                     if self.resultsbuf.faction == 1:
-                        self.crusaders.append(user)
+                        self.crusaders.append(nickname)
                     elif self.resultsbuf.faction == 2:
-                        self.arbiters.append(user)
+                        self.arbiters.append(nickname)
                     if self.resultsbuf.school != 0:
-                        self.school[user] = int(self.resultsbuf.school)
+                        self.school[nickname] = int(self.resultsbuf.school)
                     print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
-                    self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
+                    self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
             else:
                 self.resultsbuf = session.query(User).filter_by(name=self.resultsbuf.parent, network=self.factory.network).first()
                 if (self.resultsbuf):
-                    self.users[user] = self.resultsbuf
+                    self.users[nickname] = self.resultsbuf
                     self.users_html()
                     if self.resultsbuf.faction == 1:
-                        self.crusaders.append(user)
+                        self.crusaders.append(nickname)
                     elif self.resultsbuf.faction == 2:
-                        self.arbiters.append(user)
+                        self.arbiters.append(nickname)
                     if self.resultsbuf.school != 0:
-                        self.school[user] = int(self.resultsbuf.school)
+                        self.school[nickname] = int(self.resultsbuf.school)
                     print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
-                    self.notify2( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
+                    self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
             session.close()
 
     def rpg_checkclass(self, pclass):
@@ -477,13 +484,6 @@ class RPGBot(irc.IRCClient):
             session.close()
 
     def notify(self, message):
-        """ One up the twatter. """
-        if self.msg_channel == 1:
-            self.msg("#arpg", message)
-        #TODO twitter.
-
-    def notify2(self, message):
-        """ Twitter free notification. """
         if self.msg_channel == 1:
             self.msg("#arpg", message)
 
@@ -737,7 +737,7 @@ class RPGBot(irc.IRCClient):
             self.msg(user, "Registering you.")
             session.add(User(user, 1, 0, 1, 6, 1, 0, 0, 1, 1, 0,'1,3,5,6',0,int(time()),int(time()), 0, 0, self.factory.network))
             session.commit()
-            self.sendLine("WHO %s" % self.factory.channel)
+            self.sendLine("WHO %s %%na" % self.factory.channel)
         else:
             self.msg(user, "Already registered.")
         session.close()
