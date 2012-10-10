@@ -771,7 +771,7 @@ class RPGBotFactory(protocol.ReconnectingClientFactory):
 
 
 if __name__ == '__main__':
-    f = RPGBotFactory("ArloriaNET", Config.get("irc", "nickname"), Config.get("irc", "channel"))
+    f = RPGBotFactory(Config.get("irc", "network"), Config.get("irc", "nickname"), Config.get("irc", "channel"))
     #f2 = RPGBotFactory("Coldfront", "RPG","#rpg")
     reactor.connectTCP(Config.get("irc", "server"), 6667, f)
     #reactor.connectTCP("irc.coldfront.net", 6667, f2)
