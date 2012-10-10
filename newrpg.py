@@ -198,13 +198,13 @@ class RPGBot(irc.IRCClient):
 
     def irc_354(self, prefix, params):
         # FreeNode, WHO #channel %na
-        if self.factory.network.lower() == "freenode":
+        if self.factory.type == "ircd-seven":
             if params[2] != "0":
                 self.rpg_login(params[1], params[2])
 
     def irc_RPL_WHOREPLY(self, prefix, params):
         #print "WHO: %s (%s)" % (params, self.factory.network)
-        if self.factory.network.lower() != "freenode":
+        if self.factory.type == "unreal":
             if "r" in params[6]:
                 self.rpg_login(params[5], params[5])
         #else:
@@ -756,8 +756,9 @@ class RPGBotFactory(protocol.ReconnectingClientFactory):
     # I like having a comment here
     protocol = RPGBot
 
-    def __init__(self, network, nickname, channel):
+    def __init__(self, network, type, nickname, channel):
         self.network = network
+        self.type = type
         self.channel = channel
         self.nickname = nickname
     
@@ -771,7 +772,7 @@ class RPGBotFactory(protocol.ReconnectingClientFactory):
 
 
 if __name__ == '__main__':
-    f = RPGBotFactory(Config.get("irc", "network"), Config.get("irc", "nickname"), Config.get("irc", "channel"))
+    f = RPGBotFactory(Config.get("irc", "network"), Config.get("irc", "type"), Config.get("irc", "nickname"), Config.get("irc", "channel"))
     #f2 = RPGBotFactory("Coldfront", "RPG","#rpg")
     reactor.connectTCP(Config.get("irc", "server"), 6667, f)
     #reactor.connectTCP("irc.coldfront.net", 6667, f2)
