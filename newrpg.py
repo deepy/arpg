@@ -142,6 +142,25 @@ class RPGBot(irc.IRCClient):
         self.msg_channel = 1
         self.msg_user = 1
         
+        self.classlist = {
+            "Peasant": 1,
+            "Noble": 2,
+            "Citywatch": 3,
+            "Merchant": 4,
+            "Mage": 5,
+            "Waif": 6,
+            "Shaman": 7,
+            "Sailor": 10,
+            "Herbalist": 11,
+            "Bard": 12,
+            "Tailor": 13,
+            "Farseer": 14,
+            "Thief": 15,
+            "Scribe": 20
+        }
+
+        self.inverseclass = {v: k for k, v in self.classlist.items()}
+
         self.weapons = ["club","magic staff","Scroll of Protection","Wall Street Journal",
                         "+8 Divine Sword of Basketweaving","cursed urn","dumpster truck","wooden plank",
                         "Missed Appointment","HTML Validator"]
@@ -373,69 +392,11 @@ class RPGBot(irc.IRCClient):
 
     def rpg_checkclass(self, pclass):
         """ Returns name of classnumber. """
-        if pclass == 0:
-            pass
-        elif pclass == 1:
-            return "Peasant" #Normal tax, 25%
-        elif pclass == 2:
-            return "Noble"
-        elif pclass == 3:
-            return "Citywatch" #Warrior, small discount on tax (20% tax)
-        elif pclass == 4:
-            return "Merchant" #Huge tax discount (10% tax)
-        elif pclass == 5:
-            return "Mage" #Magics
-        elif pclass == 6:
-            return "Waif" #random chance to rob people
-        elif pclass == 7:
-            return "Shaman" #Magics
-        elif pclass == 10:
-            return "Sailor" #Swore enough, drowned enough
-        elif pclass == 11:
-            return "Herbalist" #Herbalism, healer
-        elif pclass == 12:
-            return "Bard"
-        elif pclass == 13:
-            return "Tailor"
-        elif pclass == 14:
-            return "Farseer"
-        elif pclass == 15:
-            return "Thief" #random chance to rob people
-        elif pclass == 20:
-            return "Scribe" #Developer
+        return self.inverseclass.get(pclass, "Serf")
 
     def rpg_classname(self, pclass):
         """ Returns classnumber of name. """
-        if pclass == 0:
-            pass
-        elif pclass == "Peasant":
-            return 1
-        elif pclass == "Noble":
-            return 2 
-        elif pclass == "Citywatch":
-            return 3
-        elif pclass == "Merchant":
-            return 4
-        elif pclass == "Mage":
-            return 5
-        elif pclass == "Waif":
-            return 6
-        elif pclass == "Shaman":
-            return 7
-        elif pclass == "Sailor":
-            return 10
-        elif pclass == "Herbalist":
-            return 11
-        elif pclass == "Bard":
-            return 12
-        elif pclass == "Tailor":
-            return 13
-        elif pclass == "Farseer":
-            return 14
-        elif pclass == "Thief":
-            return 15
-        elif pclass == "Scribe":
-            return 20
+        return self.classlist.get(pclass, 0)
 
     def rpg_checkfeats(self, pclass):
         if int(pclass) in self.feats:
