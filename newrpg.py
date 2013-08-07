@@ -1,4 +1,4 @@
-#!/usr/pkg/bin/python
+#!/usr/bin/env python
 
 # twisted imports
 from twisted.words import service
