@@ -142,6 +142,58 @@ class RPGBot(irc.IRCClient):
         self.msg_channel = 1
         self.msg_user = 1
         
+        self.leveltable = {
+            1: 100,
+            2: 200,
+            3: 400,
+            4: 800,
+            5: 1500,
+            6: 2600,
+            7: 4200,
+            8: 6400,
+            9: 9300,
+            10: 13000,
+            11: 17600,
+            12: 23200,
+            13: 29900,
+            14: 37800,
+            15: 47000,
+            16: 57600,
+            17: 69700,
+            18: 83400,
+            19: 98800,
+            20: 116000,
+            21: 135100,
+            22: 156200,
+            23: 179400,
+            24: 204800,
+            25: 232500,
+            26: 262600,
+            27: 295200,
+            28: 330400,
+            29: 368300,
+            30: 409000,
+            31: 452600,
+            32: 499200,
+            33: 548900,
+            34: 601800,
+            35: 658000,
+            36: 717600,
+            37: 780700,
+            38: 847400,
+            39: 917800,
+            40: 992000,
+            41: 1070100,
+            42: 1152200,
+            43: 1238400,
+            44: 1328800,
+            45: 1423500,
+            46: 1522600,
+            47: 1626200,
+            48: 1734400,
+            49: 1847300,
+        }
+
         self.classlist = {
             "Peasant": 1,
             "Noble": 2,
@@ -477,107 +529,13 @@ class RPGBot(irc.IRCClient):
 
     def rpg_checklevel(self, level, exp):
         """ Harcoded level tables. """
-        if level == 1 and exp >= 100:
-            return 1
-        elif level == 2 and exp >= 200:
-            return 1
-        elif level == 3 and exp >= 400:
-            return 1
-        elif level == 4 and exp >= 800:
-            return 1
-        elif level == 5 and exp >= 1500:
-            return 1
-        elif level == 6 and exp >= 2600:
-            return 1
-        elif level == 7 and exp >= 4200:
-            return 1
-        elif level == 8 and exp >= 6400:
-            return 1
-        elif level == 9 and exp >= 9300:
-            return 1
-        elif level == 10 and exp >= 13000:
-            return 1
-        elif level == 11 and exp >= 17600:
-            return 1
-        elif level == 12 and exp >= 23200:
-            return 1
-        elif level == 13 and exp >= 29900:
-            return 1
-        elif level == 14 and exp >= 37800:
-            return 1
-        elif level == 15 and exp >= 47000:
-            return 1
-        elif level == 16 and exp >= 57600:
-            return 1
-        elif level == 17 and exp >= 69700:
-            return 1
-        elif level == 18 and exp >= 83400:
-            return 1
-        elif level == 19 and exp >= 98800:
-            return 1
-        elif level == 20 and exp >= 116000:
-            return 1
-        elif level == 21 and exp >= 135100:
-            return 1
-        elif level == 22 and exp >= 156200:
-            return 1
-        elif level == 23 and exp >= 179400:
-            return 1
-        elif level == 24 and exp >= 204800:
-            return 1
-        elif level == 25 and exp >= 232500:
-            return 1
-        elif level == 26 and exp >= 262600:
-            return 1
-        elif level == 27 and exp >= 295200:
-            return 1
-        elif level == 28 and exp >= 330400:
-            return 1
-        elif level == 29 and exp >= 368300:
-            return 1
-        elif level == 30 and exp >= 409000:
-            return 1
-        elif level == 31 and exp >= 452600:
-            return 1
-        elif level == 32 and exp >= 499200:
-            return 1
-        elif level == 33 and exp >= 548900:
-            return 1
-        elif level == 34 and exp >= 601800:
-            return 1
-        elif level == 35 and exp >= 658000:
-            return 1
-        elif level == 36 and exp >= 717600:
-            return 1
-        elif level == 37 and exp >= 780700:
-            return 1
-        elif level == 38 and exp >= 847400:
-            return 1
-        elif level == 39 and exp >= 917800:
-            return 1
-        elif level == 40 and exp >= 992000:
-            return 1
-        elif level == 41 and exp >= 1070100:
-            return 1
-        elif level == 42 and exp >= 1152200:
-            return 1
-        elif level == 43 and exp >= 1238400:
-            return 1
-        elif level == 44 and exp >= 1328800:
-            return 1
-        elif level == 45 and exp >= 1423500:
-            return 1
-        elif level == 46 and exp >= 1522600:
-            return 1
-        elif level == 47 and exp >= 1626200:
-            return 1
-        elif level == 48 and exp >= 1734400:
-            return 1
-        elif level == 49 and exp >= 1847300:
-            return 1
-        else:
+        try:
+            if exp >= self.leveltable[level]:
+                return 1
+            else:
+                return 0
+        except KeyError:
             return 0
-
 
     def users_html(self):
         self.f = open("%s/%s/online.txt" % (template_output, self.factory.network), "w")
@@ -701,7 +659,7 @@ class RPGBot(irc.IRCClient):
         if self.factory.type == "ircd-seven":
             self.whois(user)
         else:
-            rpg_register(user, rest)
+            self.rpg_register(user, rest)
 
     def rpg_register(self, user, rest):
         session = Session()
