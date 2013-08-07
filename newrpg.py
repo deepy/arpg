@@ -26,7 +26,10 @@ from jinja2 import Environment, FileSystemLoader
 
 #Configurations
 Config = ConfigParser.ConfigParser()
-Config.read("config.ini")
+if len(sys.argv) == 2:
+    Config.read(sys.argv[1])
+else:
+    Config.read("config.ini")
 
 # loading the mobile template
 env = Environment(loader=FileSystemLoader(Config.get("web", "templatedirectory")))
