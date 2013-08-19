@@ -90,10 +90,9 @@ class User(Base):
     age = Column(Integer, nullable=False)
     abtime = Column(Integer, nullable=False)
     helditem = Column(Integer, nullable=False)
-    school = Column(Integer, nullable=False)
     network = Column(String(40), nullable=False)
 
-    def __init__(self, name, level, clown_level, cls, charisma, area, exp, gold, weapon, armor, clchange, classes, faction, age, abtime, helditem, school, network):
+    def __init__(self, name, level, clown_level, cls, charisma, area, exp, gold, weapon, armor, clchange, classes, faction, age, abtime, helditem, network):
         self.name = name
         self.level = level
         self.clown_level = clown_level
@@ -110,7 +109,6 @@ class User(Base):
         self.age = age
         self.abtime = abtime
         self.helditem = helditem
-        self.school = school
         self.network = network
 
     def __repr__(self):
@@ -131,7 +129,6 @@ class RPGBot(irc.IRCClient):
         self.nickname = self.factory.nickname
         self.users = {}
         self.commonusers = []
-        self.school = {}
         self.factions = {}
         self.feats = {}
         self.crusaders = []
@@ -426,8 +423,6 @@ class RPGBot(irc.IRCClient):
                         self.crusaders.append(nickname)
                     elif self.resultsbuf.faction == 2:
                         self.arbiters.append(nickname)
-                    if self.resultsbuf.school != 0:
-                        self.school[nickname] = int(self.resultsbuf.school)
                     print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
                     self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
             else:
@@ -439,8 +434,6 @@ class RPGBot(irc.IRCClient):
                         self.crusaders.append(nickname)
                     elif self.resultsbuf.faction == 2:
                         self.arbiters.append(nickname)
-                    if self.resultsbuf.school != 0:
-                        self.school[nickname] = int(self.resultsbuf.school)
                     print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
                     self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
             session.close()
@@ -510,25 +503,6 @@ class RPGBot(irc.IRCClient):
     def notify(self, message):
         if self.msg_channel == 1:
             self.msg("#arpg", message)
-
-    def rpg_changeschool(self, user, message):
-        """ Change Guild. """
-        if user in self.users:
-            if message == "Mages":
-                choice = 1
-            elif message == "Warriors":
-                choice = 2
-            elif message == "Thieves":
-                choice = 3
-            else:
-                return "Invalid choice."
-            if choice:
-                self.school[user] = choice
-                session = Session()
-                session.add(self.users[user])
-                session.commit()
-                session.close()
-                return "Updated Guild choice."
 
     def rpg_checklevel(self, level, exp):
         """ Harcoded level tables. """
@@ -606,8 +580,6 @@ class RPGBot(irc.IRCClient):
                 self.rpg_randomfight()
         elif (self.messbuf[0] == "online"):
             self.msg(user, str(self.users))
-        elif (self.messbuf[0] == "sonline"):
-            self.msg(user, str(self.school))
         elif (self.messbuf[0] == "classes"):
             if user in self.users:
                 self.msg(user, self.rpg_getlegitclass(user, 2))
@@ -617,17 +589,9 @@ class RPGBot(irc.IRCClient):
             except ValueError:
                 session.close()
                 self.msg(user, "You are allowed to change class once per every cl.")
-        elif (self.messbuf[0] == "guild"):
-            try:
-                self.msg(user, self.rpg_changeschool(user, self.messbuf[1]))
-            except IndexError:
-                self.msg(user, "Error, valid choices are: mages, warriors, thieves.")
         elif (self.messbuf[0] == "alogout"):
             if user == "Cat":
                 self.rpg_logout(self.messbuf[1])
-        elif (self.messbuf[0] == "achschool"):
-            if user == "Cat":
-                self.rpg_changeschool(user, self.messbuf[1])
         elif (self.messbuf[0] == "aglc"):
             self.msg(user, self.rpg_getlegitclass(self.messbuf[1], 1))
         elif (self.messbuf[0] == "aglcl"):
