@@ -263,6 +263,8 @@ class RPGBot(irc.IRCClient):
         self.join(Config.get(self.factory.server, "arbiters"))
 
     def irc_307(self, prefix, params):
+        # Rizon's equivalent of 330.
+        # irc_330(prefix, params)
         if params[2] == 'is a registered nick':
             self.rpg_login(params[1], params[1])
         else:
@@ -278,7 +280,7 @@ class RPGBot(irc.IRCClient):
                 pass
 
     def irc_RPL_WHOISCHANNELS(self, prefix, params):
-        if self.factory.type == "ircd-seven":
+        if self.factory.type in ["ircd-seven", "rizon"]:
             if self.factory.channel+" " in params[2]:
                 self.commonusers.append(params[1])
 
@@ -291,7 +293,8 @@ class RPGBot(irc.IRCClient):
                     self.commonusers.remove(params[1])
                 except ValueError:
                     pass
-                
+        if self.factory.type == "rizon":
+            print params
 
     def irc_RPL_WHOREPLY(self, prefix, params):
         #print "WHO: %s (%s)" % (params, self.factory.network)
