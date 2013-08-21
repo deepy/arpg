@@ -670,7 +670,7 @@ class RPGBotFactory(protocol.ReconnectingClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         print "connection failed:", reason
-        reactor.stop()
+        reactor.callLater(30, connector.connect)
 
 
 if __name__ == '__main__':
