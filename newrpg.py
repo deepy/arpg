@@ -632,7 +632,7 @@ class RPGBot(irc.IRCClient):
         session = Session()
         if not (session.query(User).filter_by(name=user, network=self.factory.network).first()):
             self.msg(user, "Registering you.")
-            session.add(User(user, 1, 0, 1, 6, 1, 0, 0, 1, 1, 0,'1,3,5,6',0,int(time()),int(time()), 0, 0, self.factory.network))
+            session.add(User(user, 1, 0, 1, 6, 1, 0, 0, 1, 1, 0,'1,3,5,6',0,int(time()),int(time()), 0, self.factory.network))
             session.commit()
             self.sendLine("WHO %s %%na" % self.factory.channel)
         else:
