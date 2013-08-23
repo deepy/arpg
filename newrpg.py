@@ -14,6 +14,9 @@ from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+# game imports
+import arpg.events as events
+import arpg.modules.notify as notify
 
 # useless stuff
 #import twitter
@@ -117,6 +120,7 @@ class RPGBot(irc.IRCClient):
     def init(self):
         """ Two times Two is cantaloupe. """
         self.nickname = self.factory.nickname
+	self.output_channel = Config.get(self.factory.server, "output")
         self.users = {}
         self.commonusers = []
         self.factions = {}
@@ -124,6 +128,10 @@ class RPGBot(irc.IRCClient):
         self.crusaders = []
         self.arbiters = []
         
+	self.events = events.Manager()
+        self.events.RegisterListener(self)
+        self.notifications = notify.Handler(self.events)
+
         self.nextfight = 0
         
         self.msg_channel = 1
@@ -324,11 +332,11 @@ class RPGBot(irc.IRCClient):
                             self.users[user].clown_level += 1
                             self.users[user].charisma = 6
                             print "%s gained a clown level!" % user
-                            self.notify("%s gained a class level!" % str(user))
+                            self.events.Post(events.Message("%s gained a class level!" % str(user)))
                         else:
                             self.users[user].charisma += 1
                             print "%s gained a charisma!" % user
-                            self.notify("%s gained a charisma!" % str(user))
+                            self.events.Post(events.Message("%s gained a charisma!" % str(user)))
                     self.pump()
                     session.add(self.users[user])
                     session.commit()
@@ -382,7 +390,7 @@ class RPGBot(irc.IRCClient):
         session = Session()
         #self.fightbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
         if random.randint(0,1) == 1:
-            self.notify("%s %s %s with a %s." % ( str(user[0][0]), random.choice(self.actions), str(user[1][0]), random.choice(self.weapons) ))
+            self.events.Post(events.Message("%s %s %s with a %s." % ( str(user[0][0]), random.choice(self.actions), str(user[1][0]), random.choice(self.weapons) )))
         session.commit()
         session.close()
 
@@ -414,7 +422,8 @@ class RPGBot(irc.IRCClient):
                     elif self.resultsbuf.faction == 2:
                         self.arbiters.append(nickname)
                     print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
-                    self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
+                    #self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
+                    self.events.Post(events.Login(str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))))
             else:
                 self.resultsbuf = session.query(User).filter_by(name=self.resultsbuf.parent, network=self.factory.network).first()
                 if (self.resultsbuf):
@@ -425,7 +434,7 @@ class RPGBot(irc.IRCClient):
                     elif self.resultsbuf.faction == 2:
                         self.arbiters.append(nickname)
                     print self.resultsbuf.level, self.rpg_checkclass(self.resultsbuf.cls), self.resultsbuf.name
-                    self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
+                    self.events.Post(events.Login(str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))))
             session.close()
 
     def rpg_checkclass(self, pclass):
@@ -461,7 +470,7 @@ class RPGBot(irc.IRCClient):
             print "%s is now level: %s" % (user, self.users[user].level)
             if self.msg_user == 1:
                 self.notice(user, "Congratulations! You gained level %s" % self.users[user].level)
-            self.notify("%s gained level %s!" % (str(user), str(self.users[user].level)))
+            self.events.Post(events.Levelup(str(user), str(self.users[user].level)))
             self.users_html()
         session.merge(self.users[user])
         session.commit()
@@ -476,7 +485,7 @@ class RPGBot(irc.IRCClient):
                     if nclass in self.rpg_getlegitclass(user, 1):
                         self.users[user].cls = nclass
                         self.msg(user, "Congratulations, you are now a %s." % self.rpg_checkclass(nclass))
-                        self.notify("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))) )
+                        self.events.Post(events.Message("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))) ))
                         session.merge(self.users[user])
                         session.commit()
                         session.close()
@@ -489,10 +498,6 @@ class RPGBot(irc.IRCClient):
                     self.msg(user, "You're not allowed to change class at the moment.")
         except KeyError:
             session.close()
-
-    def notify(self, message):
-        if self.msg_channel == 1:
-            self.msg("#arpg", message)
 
     def rpg_checklevel(self, level, exp):
         """ Harcoded level tables. """
@@ -628,6 +633,17 @@ class RPGBot(irc.IRCClient):
         else:
             self.msg(user, "Already registered.")
         session.close()
+
+    def _logout(self, user):
+        pass
+
+    def _login(self, user):
+        pass
+
+    def Notify(self, event):
+        if isinstance(event, events.Message):
+            if self.msg_channel == 1:
+                self.msg(self.output_channel, event.message)
 
 class listitem:
     href = "#"
