@@ -79,36 +79,26 @@ class User(Base):
     clown_level = Column(Integer, nullable=False)
     cls = Column(Integer, nullable=False)
     charisma = Column(Integer, nullable=False)
-    area = Column(Integer, nullable=False)
     exp = Column(Integer, nullable=False)
     gold = Column(Integer, nullable=False)
-    weapon = Column( Integer, nullable=False)
-    armor = Column(Integer, nullable=False)
     clchange = Column(Integer, nullable=False)
     classes = Column(String(80), nullable=False)
     faction = Column(Integer, nullable=False)
     age = Column(Integer, nullable=False)
-    abtime = Column(Integer, nullable=False)
-    helditem = Column(Integer, nullable=False)
     network = Column(String(40), nullable=False)
 
-    def __init__(self, name, level, clown_level, cls, charisma, area, exp, gold, weapon, armor, clchange, classes, faction, age, abtime, helditem, network):
+    def __init__(self, name, network):
         self.name = name
-        self.level = level
-        self.clown_level = clown_level
-        self.cls = cls
-        self.charisma = charisma
-        self.area = area
-        self.exp = exp
-        self.gold = gold
-        self.weapon = weapon
-        self.armor = armor
-        self.clchange = clchange
-        self.classes = classes
-        self.faction = faction
-        self.age = age
-        self.abtime = abtime
-        self.helditem = helditem
+        self.level = 1
+        self.clown_level = 0
+        self.cls = 1
+        self.charisma = 6
+        self.exp = 0
+        self.gold = 0
+        self.clchange = 0
+        self.classes = '1,3,5,6'
+        self.faction = 0
+        self.age = int(time())
         self.network = network
 
     def __repr__(self):
@@ -632,7 +622,7 @@ class RPGBot(irc.IRCClient):
         session = Session()
         if not (session.query(User).filter_by(name=user, network=self.factory.network).first()):
             self.msg(user, "Registering you.")
-            session.add(User(user, 1, 0, 1, 6, 1, 0, 0, 1, 1, 0,'1,3,5,6',0,int(time()),int(time()), 0, self.factory.network))
+            session.add(User(user, self.factory.network))
             session.commit()
             self.sendLine("WHO %s %%na" % self.factory.channel)
         else:
