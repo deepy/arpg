@@ -325,18 +325,8 @@ class RPGBot(irc.IRCClient):
             try:
                 if user in self.users:
                     session = Session()
-                    gainedexp = int((len(set(msg.lower()))+5) * self.users[user].charisma / 5)
+                    gainedexp = int((len(set(msg.lower()))+5) / 5)
                     self.rpg_awardexp(user, gainedexp)
-                    if random.randint(0,35) == 18:
-                        if self.users[user].charisma+1 >= 20:
-                            self.users[user].clown_level += 1
-                            self.users[user].charisma = 6
-                            print "%s gained a clown level!" % user
-                            self.events.Post(events.Message("%s gained a class level!" % str(user)))
-                        else:
-                            self.users[user].charisma += 1
-                            print "%s gained a charisma!" % user
-                            self.events.Post(events.Message("%s gained a charisma!" % str(user)))
                     self.pump()
                     session.add(self.users[user])
                     session.commit()
@@ -678,10 +668,3 @@ class RPGBotFactory(protocol.ReconnectingClientFactory):
         print "connection failed:", reason
         reactor.callLater(30, connector.connect)
 
-
-if __name__ == '__main__':
-    f = RPGBotFactory(Config.get("irc", "server"))
-    #f2 = RPGBotFactory("Coldfront", "RPG","#rpg")
-    reactor.connectTCP(f.server, 6667, f)
-    #reactor.connectTCP("irc.coldfront.net", 6667, f2)
-    reactor.run()
