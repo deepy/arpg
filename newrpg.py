@@ -304,23 +304,19 @@ class RPGBot(irc.IRCClient):
         if channel.lower() == self.nickname.lower():
             try:
                 if self.users[user]:
-                    msg = msg.strip()
-                    command, sep, rest = msg.partition(' ')
-                    function = getattr(self, 'command_' + command, None)
-                    if function is None:
-                        self.command(user, msg, 1)
-                    else:
-                        d = defer.maybeDeferred(function, user, rest)
-                    #d.addErrback(self._show_error)
+                    isAuthenticated = 1
             except KeyError:
-                command, sep, rest = msg.partition(' ')
-                print command
-                function = getattr(self, 'command_' + command, None)
-                if function is None:
-                    self.command(user, msg, 0)
-                else:
-                    d = defer.maybeDeferred(function, user, rest)
-                    #d.addErrback(self._show_error)
+                isAuthenticated = 0
+
+            msg = msg.strip()
+            command, sep, rest = msg.partition(' ')
+            print command
+            function = getattr(self, 'command_' + command, None)
+            if function is None:
+                self.command(user, msg, isAuthenticated)
+            else:
+                d = defer.maybeDeferred(function, user, rest)
+                #d.addErrback(self._show_error)
         elif channel.lower() == self.factory.channel.lower():
             try:
                 if user in self.users:
@@ -404,16 +400,6 @@ class RPGBot(irc.IRCClient):
             resultsbuf = session.query(Names).filter(func.lower(Names.name) == func.lower(user), func.lower(Names.network) == func.lower(self.factory.network)).first()
             if not (resultsbuf):
                 resultsbuf = session.query(User).filter(func.lower(User.name) == func.lower(user), func.lower(User.network) == func.lower(self.factory.network)).first()
-                #if (resultsbuf):
-                #    self.users[nickname] = resultsbuf
-                #    self.users_html()
-                #    if resultsbuf.faction == 1:
-                #        self.crusaders.append(nickname)
-                #    elif resultsbuf.faction == 2:
-                #        self.arbiters.append(nickname)
-                #    print resultsbuf.level, self.rpg_checkclass(resultsbuf.cls), resultsbuf.name
-                #    #self.notify( "%s the level %s %s logged in." % (str(self.resultsbuf.name), str(self.resultsbuf.level), str(self.rpg_checkclass(self.resultsbuf.cls))) )
-                #    self.events.Post(events.Login(str(resultsbuf.name), str(resultsbuf.level), str(self.rpg_checkclass(resultsbuf.cls))))
             else:
                 resultsbuf = session.query(User).filter_by(name=resultsbuf.parent, network=self.factory.network).first()
             if (resultsbuf):
