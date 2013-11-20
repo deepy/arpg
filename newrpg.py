@@ -306,20 +306,20 @@ class RPGBot(irc.IRCClient):
                 if self.users[user]:
                     msg = msg.strip()
                     command, sep, rest = msg.partition(' ')
-                    func = getattr(self, 'command_' + command, None)
-                    if func is None:
+                    function = getattr(self, 'command_' + command, None)
+                    if function is None:
                         self.command(user, msg, 1)
                     else:
-                        d = defer.maybeDeferred(func, user, rest) #FIX
+                        d = defer.maybeDeferred(function, user, rest)
                     #d.addErrback(self._show_error)
             except KeyError:
                 command, sep, rest = msg.partition(' ')
                 print command
-                func = getattr(self, 'command_' + command, None)
-                if func is None:
+                function = getattr(self, 'command_' + command, None)
+                if function is None:
                     self.command(user, msg, 0)
                 else:
-                    d = defer.maybeDeferred(func, user, rest) #FIX
+                    d = defer.maybeDeferred(function, user, rest)
                     #d.addErrback(self._show_error)
         elif channel.lower() == self.factory.channel.lower():
             try:
@@ -401,9 +401,9 @@ class RPGBot(irc.IRCClient):
     def rpg_login(self, nickname, user):
         if nickname not in self.users:
             session = Session()
-            resultsbuf = session.query(Names).filter_by(name=user, network=self.factory.network).first()
+            resultsbuf = session.query(Names).filter(func.lower(Names.name) == func.lower(user), func.lower(Names.network) == func.lower(self.factory.network)).first()
             if not (resultsbuf):
-                resultsbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
+                resultsbuf = session.query(User).filter(func.lower(User.name) == func.lower(user), func.lower(User.network) == func.lower(self.factory.network)).first()
                 #if (resultsbuf):
                 #    self.users[nickname] = resultsbuf
                 #    self.users_html()
