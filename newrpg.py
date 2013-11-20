@@ -20,7 +20,9 @@ import arpg.modules.notify as notify
 
 # useless stuff
 #import twitter
+
 import ConfigParser
+import os
 
 # start doing session.close()
 
@@ -486,7 +488,7 @@ class RPGBot(irc.IRCClient):
             return 0
 
     def users_html(self):
-        self.f = open("%s/%s/online.txt" % (template_output, self.factory.network), "w")
+        self.f = open(os.path.join(template_output, self.factory.network, "online.txt"), "w")
         self.buffer = "Users online:\n"
         for user in self.users:
             self.buffer += "%s(%s) " % (user, self.users[user].level)
@@ -500,7 +502,7 @@ class RPGBot(irc.IRCClient):
         pass
 
     def html_m_online(self, listauser):
-        self.f = open("%s/m/%s/online.html" % (template_output, self.factory.network), "w")
+        self.f = open(os.path.join(template_output, "m", self.factory.network, "online.html"), "w")
         self.buflist = []
         #for item in self.factions:
         #    self.buflist.append(listitem("#", item))
@@ -508,13 +510,13 @@ class RPGBot(irc.IRCClient):
         self.f.close()
 
     def html_m_user(self, userlist):
-        self.f = open("%s/m/%s/users.html" % (template_output, self.factory.network), "w")
+        self.f = open(os.path.join(template_output, self.factory.network, "users.html"), "w")
         self.f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=userlist ))
         self.f.close()
 
     def html_fulldump(self):
         session = Session()
-        self.f = open("%s/%s/users.txt" % (template_output, self.factory.network), "w")
+        self.f = open(os.path.join(template_output, self.factory.network, "users.txt"), "w")
         self.buffer = "IRCRPG players:\n"
         self.classbuff = ""
         for row in session.query(User).filter_by(network=self.factory.network).order_by(User.level.desc()).all():
