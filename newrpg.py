@@ -122,7 +122,7 @@ class RPGBot(irc.IRCClient):
     def init(self):
         """ Two times Two is cantaloupe. """
         self.nickname = self.factory.nickname
-	self.output_channel = Config.get(self.factory.server, "output")
+        self.output_channel = Config.get(self.factory.server, "output")
         self.users = {}
         self.commonusers = []
         self.factions = {}
@@ -130,7 +130,7 @@ class RPGBot(irc.IRCClient):
         self.crusaders = []
         self.arbiters = []
         
-	self.events = events.Manager()
+        self.events = events.Manager()
         self.events.RegisterListener(self)
         self.notifications = notify.Handler(self.events)
 
@@ -304,21 +304,22 @@ class RPGBot(irc.IRCClient):
         user = user.split('!', 1)[0]
         # Check to see if they're sending me a private message
         if channel.lower() == self.nickname.lower():
-            try:
-                if self.users[user]:
-                    isAuthenticated = 1
-            except KeyError:
-                isAuthenticated = 0
+            if user.find("Serv") == -1:
+                try:
+                    if self.users[user]:
+                        isAuthenticated = True
+                except KeyError:
+                    isAuthenticated = False
 
-            msg = msg.strip()
-            command, sep, rest = msg.partition(' ')
-            print command
-            function = getattr(self, 'command_' + command, None)
-            if function is None:
-                self.command(user, msg, isAuthenticated)
-            else:
-                d = defer.maybeDeferred(function, user, rest)
-                #d.addErrback(self._show_error)
+                msg = msg.strip()
+                command, sep, rest = msg.partition(' ')
+                print command
+                function = getattr(self, 'command_' + command, None)
+                if function is None:
+                    self.events.Post(events.Command(user=user, command=command, parameters=rest, authenticated=isAuthenticated))
+                else:
+                    d = defer.maybeDeferred(function, user, rest, isAuthenticated)
+                    #d.addErrback(self._show_error)
         elif channel.lower() == self.factory.channel.lower():
             try:
                 if user in self.users:
@@ -378,7 +379,7 @@ class RPGBot(irc.IRCClient):
         session = Session()
         #self.fightbuf = session.query(User).filter_by(name=user, network=self.factory.network).first()
         if random.randint(0,1) == 1:
-            self.events.Post(events.Message("%s %s %s with a %s." % ( str(user[0][0]), random.choice(self.actions), str(user[1][0]), random.choice(self.weapons) )))
+            self.events.Post(events.Message("%s %s %s with a %s." % ( str(user[0][0]), random.choice(self.actions), str(user[1][0]), random.choice(self.weapons) ), "output"))
         session.commit()
         session.close()
 
@@ -463,7 +464,7 @@ class RPGBot(irc.IRCClient):
                     if nclass in self.rpg_getlegitclass(user, 1):
                         self.users[user].cls = nclass
                         self.msg(user, "Congratulations, you are now a %s." % self.rpg_checkclass(nclass))
-                        self.events.Post(events.Message("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))) ))
+                        self.events.Post(events.Message("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))), "output" ))
                         session.merge(self.users[user])
                         session.commit()
                         session.close()
@@ -542,52 +543,39 @@ class RPGBot(irc.IRCClient):
         else:
             self.sendLine("KICK %s %s" % (channel, user))
 
-    def command(self, user, msg, status):
-        session = Session()
-        self.messbuf = msg.split(" ", 1)
-        if (self.messbuf[0] == "die"):
-            if user == "Cat":
-                reactor.stop()
-        elif (self.messbuf[0] == "fight"):
-            if user == "Cat":
-                self.rpg_randomfight()
-        elif (self.messbuf[0] == "online"):
-            self.msg(user, str(self.users))
-        elif (self.messbuf[0] == "classes"):
-            if user in self.users:
-                self.msg(user, self.rpg_getlegitclass(user, 2))
-        elif (self.messbuf[0] == "class"):
-            try:
-                self.rpg_changeclass(user, self.rpg_classname(self.messbuf[1]))
-            except ValueError:
-                session.close()
-                self.msg(user, "You are allowed to change class once per every cl.")
-        elif (self.messbuf[0] == "alogout"):
-            if user == "Cat":
-                self.rpg_logout(self.messbuf[1])
-        elif (self.messbuf[0] == "aglc"):
-            self.msg(user, self.rpg_getlegitclass(self.messbuf[1], 1))
-        elif (self.messbuf[0] == "aglcl"):
-            self.msg(user, self.rpg_getlegitclass(self.messbuf[1], 2))
-        elif (self.messbuf[0] == "online"):
-            self.msg(user, int(time()) - self.boot)
-        else:
-            if user.find("Serv") == -1:
-                self.msg(user, "Commands are: register, classes, guild, class")
-        session.close() #DEBUG ATTEMPT
-
-    def command_test(self, user, rest):
+    def command_test(self, user, rest, isAuthenticated):
         #print "yes", user
         self.whois(user)
 
-    def command_insert(self, user, rest):
+    #def command_class(self, user, rest, isAuthenticated):
+    #    if isAuthenticated:
+    #        try:
+    #            self.rpg_changeclass(user, self.rpg_classname(rest))
+    #        except ValueError:
+    #            self.msg(user, "You are allowed to change class only once per cl.")
+
+    def command_die(self, user, rest, isAuthenticated):
+        if user == "Cat":
+            reactor.stop()
+
+    def command_classes(self, user, rest, isAuthenticated):
+        if isAuthenticated:
+            self.events.Post(events.Message(target=user, message=self.rpg_getlegitclass(user, 2)))
+
+    def command_help(self, user, rest, isAuthenticated):
+        self.events.Post(events.Message(target=user, message="Commands are: register, classes, guild, class"))
+
+    def command_online(self, user, rest, isAuthenticated):
+        self.events.Post(events.Message(target=user, message=str(self.users)))
+
+    def command_insert(self, user, rest, isAuthenticated):
         if user == "Cat":
             session = Session()
             names = rest.split(' ')
             session.add(Names(names[0], names[1], self.factory.network))
             session.commit()
 
-    def command_html(self, user, rest):
+    def command_html(self, user, rest, isAuthenticated):
         if user == "Cat":
             command = rest.partition(' ')
             if command[0] == "users":
@@ -595,7 +583,7 @@ class RPGBot(irc.IRCClient):
             elif command[0] == "full":
                 self.html_fulldump()
 
-    def command_register(self, user, rest):
+    def command_register(self, user, rest, isAuthenticated):
         if self.factory.type == "ircd-seven":
             self.whois(user)
         else:
@@ -620,8 +608,11 @@ class RPGBot(irc.IRCClient):
 
     def Notify(self, event):
         if isinstance(event, events.Message):
-            if self.msg_channel == 1:
-                self.msg(self.output_channel, event.message)
+            if event.target == "output":
+                if self.msg_channel == 1:
+                    self.msg(self.output_channel, event.message)
+            else:
+                self.msg(event.target, event.message)
 
 class listitem:
     href = "#"

@@ -11,8 +11,8 @@ class Collision(Event):
 class Login(Event):
     def __init__(self, name, level, cls):
         self.name = name
-	self.level = level
-	self.cls = cls
+        self.level = level
+        self.cls = cls
 
 class Logout(Event):
     def __init__(self, name, level, cls):
@@ -26,8 +26,16 @@ class Levelup(Event):
         self.level = level
 
 class Message(Event):
-    def __init__(self, message):
+    def __init__(self, message, target):
         self.message = message
+        self.target = target
+
+class Command(Event):
+    def __init__(self, user, command, parameters=None, authenticated=False):
+        self.user = user
+        self.command = command
+        self.parameters = parameters
+        self.authenticated = authenticated
 
 class Manager:
     def __init__(self ):
