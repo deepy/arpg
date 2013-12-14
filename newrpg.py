@@ -18,13 +18,8 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import arpg.events as events
 import arpg.modules.notify as notify
 
-# useless stuff
-#import twitter
-
 import ConfigParser
 import os
-
-# start doing session.close()
 
 # templates
 from jinja2 import Environment, FileSystemLoader
@@ -56,8 +51,39 @@ Base = declarative_base(bind=db)
 #  mytest2 = session.query(User).filter_by(name='test').first()
 #  session.commit() to save
 
+class Guild(Base):
+    __tablename__ = 'guilds'
 
-# sqlalchy ORM start
+    id = Column(Integer, Sequence('guild_id_seq'), primary_key=True)
+    name = Column(String(40), nullable=False)
+    shortname = Column(String(10), nullable=False)
+    owner = Column(Integer, nullable=False)
+    network = Column(String(40), nullable=False)
+
+    def __init__(self, owner):
+        self.owner = owner
+
+    def __repr__(self):
+        return "<Guild('%s <%s> (%s))')>" % (self.name, self.shortname, self.network)
+
+class GuildInvite(Base):
+    __tablename__ = 'guildinvites'
+
+    id = Column(Integer, Sequence('guild_id_seq'), primary_key=True)
+    guild = Column(String(40), nullable=False)
+    target = Column(String(40), nullable=False)
+    inviter = Column(String(40), nullable=False)
+    network = Column(String(40), nullable=False)
+
+    def __init__(self, guild, target, inviter, network):
+        self.guild = guild
+        self.target = target
+        self.inviter = inviter
+        self.network = network
+
+    def __repr__(self):
+        return "<GuildInvite('%s: %s (%s))')>" % (self.guild, self.target, self.network)
+
 class Names(Base):
     __tablename__ = 'names'
 
@@ -91,6 +117,7 @@ class User(Base):
     faction = Column(Integer, nullable=False)
     age = Column(Integer, nullable=False)
     network = Column(String(40), nullable=False)
+    guild = Column(String(40), nullable=True, default=None)
 
     def __init__(self, name, network):
         self.name = name
@@ -230,6 +257,14 @@ class RPGBot(irc.IRCClient):
         
         self.factions[10] = ("buffalop") #Udderlorn (Buffaloops)
         self.factions[15] = ("lizkoot") #V'Gaes (Liz'Koots)
+        self.guilds = {}
+
+        session = Session()
+
+        for guild in session.query(Guild).filter_by(network=self.factory.network).all():
+            self.guilds[guild.shortname] = guild
+
+        session.close()
 
     def cron(self):
         if self.nextfight <= int(time()):
@@ -295,7 +330,7 @@ class RPGBot(irc.IRCClient):
 
     def irc_RPL_WHOREPLY(self, prefix, params):
         #print "WHO: %s (%s)" % (params, self.factory.network)
-        if self.factory.type == "unreal":
+        if self.factory.type in ["unreal","rizon"]:
             if "r" in params[6]:
                 self.rpg_login(params[5], params[5])
 
@@ -343,13 +378,14 @@ class RPGBot(irc.IRCClient):
     def irc_JOIN(self, prefix, params):
         if params[0].lower() == self.factory.channel.lower():
             self.sendLine("WHO %s %%na" % self.factory.channel)
+            print "sent WHO"
         elif params[0].lower() == Config.get(self.factory.server, "crusaders").lower():
             try:
                 if self.users[prefix.split('!')[0]]:
                     if prefix.split('!')[0] not in self.crusaders:
                         self.kick(Config.get(self.factory.server, "crusaders"), prefix.split('!')[0], "Not one of the Crusaders!")
             except KeyError:
-                if prefix.split('!')[0] != "RPG":
+                if prefix.split('!')[0] != self.nickname:
                     self.kick(Config.get(self.factory.server, "crusaders"), prefix.split('!')[0], "Not one of the Crusaders!")
         elif params[0].lower() == Config.get(self.factory.server, "arbiters").lower():
             try:
@@ -357,7 +393,7 @@ class RPGBot(irc.IRCClient):
                     if prefix.split('!')[0] not in self.arbiters:
                         self.kick(Config.get(self.factory.server, "arbiters"), prefix.split('!')[0], "Not one of the Arbiters!")
             except KeyError:
-                if prefix.split('!')[0] != "RPG":
+                if prefix.split('!')[0] != self.nickname:
                     self.kick(Config.get(self.factory.server, "arbiters"), prefix.split('!')[0], "Not one of the Arbiters!")
 
     def irc_PART(self, prefix, params):
@@ -413,7 +449,7 @@ class RPGBot(irc.IRCClient):
                 elif resultsbuf.faction == 2:
                     self.arbiters.append(nickname)
                 print resultsbuf.level, self.rpg_checkclass(resultsbuf.cls), resultsbuf.name
-                self.events.Post(events.Login(str(resultsbuf.name), str(resultsbuf.level), str(self.rpg_checkclass(resultsbuf.cls))))
+                self.events.Post(events.Login(str(resultsbuf.name), str(resultsbuf.level), str(self.rpg_checkclass(resultsbuf.cls)), resultsbuf.guild))
             session.close()
 
     def rpg_checkclass(self, pclass):
@@ -489,45 +525,45 @@ class RPGBot(irc.IRCClient):
             return 0
 
     def users_html(self):
-        self.f = open(os.path.join(template_output, self.factory.network, "online.txt"), "w")
-        self.buffer = "Users online:\n"
+        f = open(os.path.join(template_output, self.factory.network, "online.txt"), "w")
+        ubuffer = "Users online:\n"
         for user in self.users:
-            self.buffer += "%s(%s) " % (user, self.users[user].level)
-        self.failbuffer = self.buffer
-        self.buffer += "\nLast updated: %s" % (strftime("%a, %d %b %Y %H:%M:%S", localtime()))
-        self.f.write(self.buffer)
-        self.f.close()
+            ubuffer += "%s(%s) " % (user, self.users[user].level)
+        failbuffer = ubuffer
+        ubuffer += "\nLast updated: %s" % (strftime("%a, %d %b %Y %H:%M:%S", localtime()))
+        f.write(ubuffer)
+        f.close()
         self.html_fulldump()
 
     def html_mobile(self):
         pass
 
     def html_m_online(self, listauser):
-        self.f = open(os.path.join(template_output, "m", self.factory.network, "online.html"), "w")
-        self.buflist = []
+        f = open(os.path.join(template_output, "m", self.factory.network, "online.html"), "w")
+        buflist = []
         #for item in self.factions:
         #    self.buflist.append(listitem("#", item))
-        self.f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=listauser ))
-        self.f.close()
+        f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=listauser ))
+        f.close()
 
     def html_m_user(self, userlist):
-        self.f = open(os.path.join(template_output, self.factory.network, "users.html"), "w")
-        self.f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=userlist ))
-        self.f.close()
+        f = open(os.path.join(template_output, self.factory.network, "users.html"), "w")
+        f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=userlist ))
+        f.close()
 
     def html_fulldump(self):
         session = Session()
-        self.f = open(os.path.join(template_output, self.factory.network, "users.txt"), "w")
-        self.buffer = "IRCRPG players:\n"
-        self.classbuff = ""
+        f = open(os.path.join(template_output, self.factory.network, "users.txt"), "w")
+        ubuffer = "IRCRPG players:\n"
+        classbuff = ""
         for row in session.query(User).filter_by(network=self.factory.network).order_by(User.level.desc()).all():
             if row.cls != 0:
-                self.classbuff = self.rpg_checkclass(row.cls)+" "
+                classbuff = self.rpg_checkclass(row.cls)+" "
             #Gold formula: int(round(n, 1 - int(math.log10(n))))
-            self.buffer += "%s%s, level: %s.%s (%s)\n" % (self.classbuff, row.name, row.level, row.clown_level, int(float("%.1e" % row.gold)))
-        self.f.write(self.buffer)
-        self.f.close()
-        self.html_m_user(self.buffer)
+            ubuffer += "%s%s, level: %s.%s (%s)\n" % (classbuff, row.name, row.level, row.clown_level, int(float("%.1e" % row.gold)))
+        f.write(ubuffer)
+        f.close()
+        self.html_m_user(ubuffer)
         session.close()
 
     def whois(self, nickname, server=None):
@@ -558,12 +594,48 @@ class RPGBot(irc.IRCClient):
         if user == "Cat":
             reactor.stop()
 
+    def command_guild(self, user, rest, isAuthenticated):
+        if isAuthenticated:
+            if not self.users[user].guild:
+                session = Session()
+                command, sep, rest = rest.partition(' ')
+                if command == "create":
+                    self.events.Post(events.Message(target=user, message="Not yet implemented."))
+                elif command == "invite":
+                    self.events.Post(events.Message(target=user, message="Not yet implemented."))
+                elif command == "join":
+                    command, sep, rest = rest.partition(' ')
+                    if command == '':
+                        result = "Invited to join: "
+                        for guild in session.query(GuildInvite).filter(func.lower(GuildInvite.target) == func.lower(user), func.lower(GuildInvite.network) == func.lower(self.factory.network)).all():
+                            result += "%s (%s) by %s, " % (self.guilds[guild.guild].name, self.guilds[guild.guild].shortname, guild.inviter)
+                        if len(result) > 17 :
+                            self.events.Post(events.Message(target=user, message=str(result)))
+                    else:
+                        if not self.users[user].guild:
+                            result = session.query(GuildInvite).filter(func.lower(GuildInvite.target) == func.lower(user), func.lower(GuildInvite.guild) == func.lower(command), func.lower(GuildInvite.network) == func.lower(self.factory.network)).first()
+                            if result:
+                                self.users[user].guild = result.guild
+                                session.merge(self.users[user])
+                                session.delete(result)
+                                session.commit()
+                                self.events.Post(events.Message(target=user, message="Joined {0}.".format(self.guilds[result.guild].name) ))
+                                self.events.Post(events.Message(target="output", message="{0} has joined {1}.".format(user, self.guilds[result.guild].name)))
+                            else:
+                                self.events.Post(events.Message(target=user, message="Couldn't find that invite."))
+                        else:
+                            self.events.Post(events.Message(target=user, message="You must leave you current guild before you can join another."))
+                session.close()
+
     def command_classes(self, user, rest, isAuthenticated):
         if isAuthenticated:
             self.events.Post(events.Message(target=user, message=self.rpg_getlegitclass(user, 2)))
 
     def command_help(self, user, rest, isAuthenticated):
-        self.events.Post(events.Message(target=user, message="Commands are: register, classes, guild, class"))
+        if isAuthenticated:
+            self.events.Post(events.Message(target=user, message="Commands are: register, classes, guild, class"))
+        else:
+            self.events.Post(events.Message(target=user, message="Commands are: register"))
 
     def command_online(self, user, rest, isAuthenticated):
         self.events.Post(events.Message(target=user, message=str(self.users)))
@@ -574,6 +646,7 @@ class RPGBot(irc.IRCClient):
             names = rest.split(' ')
             session.add(Names(names[0], names[1], self.factory.network))
             session.commit()
+            session.close()
 
     def command_html(self, user, rest, isAuthenticated):
         if user == "Cat":

@@ -7,6 +7,9 @@ class Handler:
 
     def Notify(self, event):
         if isinstance(event, events.Login):
-            self.manager.Post(events.Message("%s the level %s %s logged in." % (event.name, event.level, event.cls), "output"))
+            if event.guild:
+                self.manager.Post(events.Message("{0} <{1}> the level {2} {3} logged in.".format(event.name, event.guild, event.level, event.cls), "output"))
+            else:
+                self.manager.Post(events.Message("{0} the level {1} {2} logged in.".format(event.name, event.level, event.cls), "output"))
         if isinstance(event, events.Levelup):
-            self.manager.Post(events.Message("%s gained level %s!" % (event.name, event.level), "output"))
+            self.manager.Post(events.Message("{0} gained level {1}!".format(event.name, event.level), "output"))

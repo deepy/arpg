@@ -9,10 +9,11 @@ class Collision(Event):
         self.targets = targets
 
 class Login(Event):
-    def __init__(self, name, level, cls):
+    def __init__(self, name, level, cls, guild=None):
         self.name = name
         self.level = level
         self.cls = cls
+        self.guild = guild
 
 class Logout(Event):
     def __init__(self, name, level, cls):
