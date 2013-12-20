@@ -288,8 +288,9 @@ class RPGBot(irc.IRCClient):
         if Config.get(self.factory.server, "service") == "nickserv":
             self.msg("NickServ", "identify %s" % Config.get(self.factory.server, "nickpass"))
             self.mode(self.nickname, True, "R")
-        self.join(self.factory.channel)
-        self.sendLine("WHO %s %%a" % self.factory.channel)
+        for channel in self.factory.channels:
+            self.join(channel)
+            self.sendLine("WHO %s %%a" % channel)
         self.join(Config.get(self.factory.server, "output"))
         self.join(Config.get(self.factory.server, "crusaders"))
         self.join(Config.get(self.factory.server, "arbiters"))
@@ -313,8 +314,10 @@ class RPGBot(irc.IRCClient):
 
     def irc_RPL_WHOISCHANNELS(self, prefix, params):
         if self.factory.type in ["ircd-seven", "rizon"]:
-            if self.factory.channel+" " in params[2]:
-                self.commonusers.append(params[1])
+            for channel in self.factory.channels:
+                if channel+" " in params[2]:
+                    self.commonusers.append(params[1])
+                    return True
 
     def irc_330(self, prefix, params):
         # irc_RPL_WHOISACCOUNT. ircu, used at FreeNode.
@@ -355,7 +358,7 @@ class RPGBot(irc.IRCClient):
                 else:
                     d = defer.maybeDeferred(function, user, rest, isAuthenticated)
                     #d.addErrback(self._show_error)
-        elif channel.lower() == self.factory.channel.lower():
+        elif channel.lower() in self.factory.channels:
             try:
                 if user in self.users:
                     session = Session()
@@ -376,8 +379,8 @@ class RPGBot(irc.IRCClient):
         self.rpg_logout(prefix.split('!')[0])
 
     def irc_JOIN(self, prefix, params):
-        if params[0].lower() == self.factory.channel.lower():
-            self.sendLine("WHO %s %%na" % self.factory.channel)
+        if params[0].lower() in self.factory.channels:
+            self.sendLine("WHO %s %%na" % params[0])
             print "sent WHO"
         elif params[0].lower() == Config.get(self.factory.server, "crusaders").lower():
             try:
@@ -397,14 +400,14 @@ class RPGBot(irc.IRCClient):
                     self.kick(Config.get(self.factory.server, "arbiters"), prefix.split('!')[0], "Not one of the Arbiters!")
 
     def irc_PART(self, prefix, params):
-        if params[0].lower() == self.factory.channel:
+        if params[0].lower() in self.factory.channels:
             self.rpg_logout(prefix.split('!')[0])
 
     def irc_QUIT(self, prefix, params):
         self.rpg_logout(prefix.split('!')[0])
 
     def userKicked(self, kickee, channel, kicker, message):
-        if channel == self.factory.channel:
+        if channel in self.factory.channels:
             self.rpg_logout(kickee)
 
     def rpg_randomfight(self):
@@ -668,7 +671,8 @@ class RPGBot(irc.IRCClient):
             self.msg(user, "Registering you.")
             session.add(User(user, self.factory.network))
             session.commit()
-            self.sendLine("WHO %s %%na" % self.factory.channel)
+            for channel in self.factory.channels:
+                self.sendLine("WHO %s %%na" % channel)
         else:
             self.msg(user, "Already registered.")
         session.close()
@@ -709,7 +713,7 @@ class RPGBotFactory(protocol.ReconnectingClientFactory):
         self.server = server
         self.network = Config.get(self.server, "network")
         self.type = Config.get(self.server, "type")
-        self.channel = Config.get(self.server, "channel")
+        self.channels = Config.get(self.server, "channels").lower().replace(' ','').split(',')
         self.nickname = Config.get(self.server, "nickname")
     
     def clientConnectionLost(self, connector, reason):
