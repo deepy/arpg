@@ -368,7 +368,7 @@ class RPGBot(irc.IRCClient):
                     session.add(self.users[user])
                     session.commit()
                     session.close()
-                    print "<%s> %s (%s)" % (user, msg, gainedexp)
+                    print "%s <%s> %s (%s)" % (channel.lower(), user, msg, gainedexp)
             except (ValueError, KeyError):
                 session.close()
                 pass #DEBUG ATTEMPT
@@ -381,7 +381,6 @@ class RPGBot(irc.IRCClient):
     def irc_JOIN(self, prefix, params):
         if params[0].lower() in self.factory.channels:
             self.sendLine("WHO %s %%na" % params[0])
-            print "sent WHO"
         elif params[0].lower() == Config.get(self.factory.server, "crusaders").lower():
             try:
                 if self.users[prefix.split('!')[0]]:
