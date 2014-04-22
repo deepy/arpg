@@ -127,6 +127,16 @@ class User(Base):
         return "<User('%s: %s (%s)')>" % (self.name, self.level, self.network)
 
 Base.metadata.create_all(db)
+from functools import wraps
+
+# decorators
+
+def adminOnly(f):
+    def check(*args, **kwargs):
+        if args[1] == Config.get(args[0].factory.server, "admin"):
+            return f(*args, **kwargs)
+        return
+    return check
 
 class RPGBot(irc.IRCClient):  
     nickname = "RPG"
@@ -134,6 +144,12 @@ class RPGBot(irc.IRCClient):
     versionNum = "(Guildbars)"
     fingerReply = "RPGBot (rpg@armchairs.be) - http://x13.se/~deepy/arpg/readme.txt"
     boot = int(time())
+
+    def p_decorate(func):
+        def func_wrapper(*args, **kwargs):
+            print "<p>{0}</p>".format(func(*args, **kwargs))
+        return func_wrapper
+
 
     def init(self):
         """ Two times Two is cantaloupe. """
@@ -553,9 +569,9 @@ class RPGBot(irc.IRCClient):
         else:
             self.sendLine("KICK %s %s" % (channel, user))
 
+    @adminOnly
     def command_die(self, user, rest, isAuthenticated):
-        if user == Config.get(self.factory.server, "admin"):
-            reactor.stop()
+        reactor.stop()
 
     def command_guild(self, user, rest, isAuthenticated):
         if isAuthenticated:
@@ -603,21 +619,21 @@ class RPGBot(irc.IRCClient):
     def command_online(self, user, rest, isAuthenticated):
         self.events.Post(events.Message(target=user, message=str(self.users)))
 
+    @adminOnly
     def command_insert(self, user, rest, isAuthenticated):
-        if user == "Cat":
-            session = Session()
-            names = rest.split(' ')
-            session.add(Names(names[0], names[1], self.factory.network))
-            session.commit()
-            session.close()
+        session = Session()
+        names = rest.split(' ')
+        session.add(Names(names[0], names[1], self.factory.network))
+        session.commit()
+        session.close()
 
+    @adminOnly
     def command_html(self, user, rest, isAuthenticated):
-        if user == "Cat":
-            command = rest.partition(' ')
-            if command[0] == "users":
-                self.users_html()
-            elif command[0] == "full":
-                self.html_fulldump()
+        command = rest.partition(' ')
+        if command[0] == "users":
+            self.users_html()
+        elif command[0] == "full":
+            self.html_fulldump()
 
     def command_register(self, user, rest, isAuthenticated):
         if self.factory.type == "ircd-seven":
