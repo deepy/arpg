@@ -554,7 +554,7 @@ class RPGBot(irc.IRCClient):
             self.sendLine("KICK %s %s" % (channel, user))
 
     def command_die(self, user, rest, isAuthenticated):
-        if user == "Cat":
+        if user == Config.get(self.factory.server, "admin"):
             reactor.stop()
 
     def command_guild(self, user, rest, isAuthenticated):
