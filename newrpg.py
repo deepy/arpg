@@ -36,20 +36,10 @@ env = Environment(loader=FileSystemLoader(Config.get("web", "templatedirectory")
 template = env.get_template('mobile.tpl')
 template_output = Config.get("web", "outputdirectory")
 
-#sqlalchy start
+# SQLAlchemy
 db = create_engine(Config.get("db", "string"), echo=False)
 Session = sessionmaker(bind=db,expire_on_commit=False)
 Base = declarative_base(bind=db)
-
-
-#sqlalchy end
-
-# //sqlalchy notes
-#  mytest = User("test", 1, 1, 1, 1, 1, 1, 1, 1, 1, 10, "1,2", 2, "ArloriaNET")
-#  session.add(mytest)
-#  session = Session()
-#  mytest2 = session.query(User).filter_by(name='test').first()
-#  session.commit() to save
 
 class Guild(Base):
     __tablename__ = 'guilds'
@@ -136,8 +126,7 @@ class User(Base):
     def __repr__(self):
         return "<User('%s: %s (%s)')>" % (self.name, self.level, self.network)
 
-Base.metadata.create_all(db) #Uncomment this on the first run.
-# sqlalchy ORM end
+Base.metadata.create_all(db)
 
 class RPGBot(irc.IRCClient):  
     nickname = "RPG"
@@ -362,7 +351,7 @@ class RPGBot(irc.IRCClient):
             try:
                 if user in self.users:
                     session = Session()
-                    gainedexp = int((len(set(msg.lower()))+5) / 5)
+                    gainedexp = int((len(set(msg.lower()))+5) / 4)
                     self.rpg_awardexp(user, gainedexp)
                     self.pump()
                     session.add(self.users[user])
@@ -537,22 +526,6 @@ class RPGBot(irc.IRCClient):
         f.close()
         self.html_fulldump()
 
-    def html_mobile(self):
-        pass
-
-    def html_m_online(self, listauser):
-        f = open(os.path.join(template_output, "m", self.factory.network, "online.html"), "w")
-        buflist = []
-        #for item in self.factions:
-        #    self.buflist.append(listitem("#", item))
-        f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=listauser ))
-        f.close()
-
-    def html_m_user(self, userlist):
-        f = open(os.path.join(template_output, self.factory.network, "users.html"), "w")
-        f.write(template.render(title="Online users", navigation= [listitem("index.html", "Home")], pretext=userlist ))
-        f.close()
-
     def html_fulldump(self):
         session = Session()
         f = open(os.path.join(template_output, self.factory.network, "users.txt"), "w")
@@ -565,7 +538,6 @@ class RPGBot(irc.IRCClient):
             ubuffer += "%s%s, level: %s.%s (%s)\n" % (classbuff, row.name, row.level, row.clown_level, int(float("%.1e" % row.gold)))
         f.write(ubuffer)
         f.close()
-        self.html_m_user(ubuffer)
         session.close()
 
     def whois(self, nickname, server=None):
@@ -580,17 +552,6 @@ class RPGBot(irc.IRCClient):
             self.sendLine("KICK %s %s :%s" % (channel, user, reason))
         else:
             self.sendLine("KICK %s %s" % (channel, user))
-
-    def command_test(self, user, rest, isAuthenticated):
-        #print "yes", user
-        self.whois(user)
-
-    #def command_class(self, user, rest, isAuthenticated):
-    #    if isAuthenticated:
-    #        try:
-    #            self.rpg_changeclass(user, self.rpg_classname(rest))
-    #        except ValueError:
-    #            self.msg(user, "You are allowed to change class only once per cl.")
 
     def command_die(self, user, rest, isAuthenticated):
         if user == "Cat":
