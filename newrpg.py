@@ -369,14 +369,13 @@ class RPGBot(irc.IRCClient):
                     session = Session()
                     gainedexp = int((len(set(msg.lower()))+5) / 4)
                     self.rpg_awardexp(user, gainedexp)
-                    self.pump()
+                    #self.pump()
                     session.add(self.users[user])
                     session.commit()
                     session.close()
                     print "%s <%s> %s (%s)" % (channel.lower(), user, msg, gainedexp)
             except (ValueError, KeyError):
                 session.close()
-                pass #DEBUG ATTEMPT
         return
 
     def irc_NICK(self, prefix, params):
