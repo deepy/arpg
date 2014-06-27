@@ -41,6 +41,17 @@ db = create_engine(Config.get("db", "string"), echo=False)
 Session = sessionmaker(bind=db,expire_on_commit=False)
 Base = declarative_base(bind=db)
 
+class Quest:
+    def __init_(self, type, winners=False):
+        self.finished = []
+        self.progress = {}
+
+    def progress(self, user, progress):
+        pass
+
+    def _finish(self):
+        pass
+
 class Guild(Base):
     __tablename__ = 'guilds'
 
@@ -108,6 +119,7 @@ class User(Base):
     age = Column(Integer, nullable=False)
     network = Column(String(40), nullable=False)
     guild = Column(String(40), nullable=True, default=None)
+    quests_completed = Column(Integer, nullable=False, default=0)
 
     def __init__(self, name, network):
         self.name = name
@@ -356,7 +368,6 @@ class RPGBot(irc.IRCClient):
 
                 msg = msg.strip()
                 command, sep, rest = msg.partition(' ')
-                print command
                 function = getattr(self, 'command_' + command, None)
                 if function is None:
                     self.events.Post(events.Command(user=user, command=command, parameters=rest, authenticated=isAuthenticated))
@@ -486,6 +497,7 @@ class RPGBot(irc.IRCClient):
         """ Awards user experience. """
         session = Session()
         self.users[user].exp += exp
+        self.events.Post(events.ExpGained(name=user, amount=exp))
         if self.rpg_checklevel(self.users[user].level, exp+self.users[user].exp) == 1:
             self.users[user].level += 1
             print "%s is now level: %s" % (user, self.users[user].level)
@@ -502,21 +514,17 @@ class RPGBot(irc.IRCClient):
         session = Session()
         try:
             if self.users[user]:
-                if self.users[user].clown_level > self.users[user].clchange:
-                    if nclass in self.rpg_getlegitclass(user, 1):
-                        self.users[user].cls = nclass
-                        self.msg(user, "Congratulations, you are now a %s." % self.rpg_checkclass(nclass))
-                        self.events.Post(events.Message("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))), "output" ))
-                        session.merge(self.users[user])
-                        session.commit()
-                        session.close()
-                        self.users_html()
-                    else:
-                        self.msg(user, "You can't change into that class.")
-                        session.close()
-                else:
+                if nclass in self.rpg_getlegitclass(user, 1):
+                    self.users[user].cls = nclass
+                    self.msg(user, "Congratulations, you are now a %s." % self.rpg_checkclass(nclass))
+                    self.events.Post(events.Message("%s is now a %s." % (str(user), str(self.rpg_checkclass(nclass))), "output" ))
+                    session.merge(self.users[user])
+                    session.commit()
                     session.close()
-                    self.msg(user, "You're not allowed to change class at the moment.")
+                    self.users_html()
+                else:
+                    self.msg(user, "You can't change into that class.")
+                    session.close()
         except KeyError:
             session.close()
 
@@ -604,6 +612,13 @@ class RPGBot(irc.IRCClient):
                         else:
                             self.events.Post(events.Message(target=user, message="You must leave you current guild before you can join another."))
                 session.close()
+
+    def command_class(self, user, rest, isAuthenticated):
+        if isAuthenticated:
+            try:
+                self.rpg_changeclass(user,self.classlist[rest.capitalize()])
+            except KeyError:
+                self.events.Post(events.Message(target=user, message=self.rpg_getlegitclass(user, 2)))
 
     def command_classes(self, user, rest, isAuthenticated):
         if isAuthenticated:

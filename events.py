@@ -26,6 +26,11 @@ class Levelup(Event):
         self.name = name
         self.level = level
 
+class ExpGained(Event):
+    def __init__(self, name, amount):
+        self.name = name
+        self.amount = amount
+
 class Message(Event):
     def __init__(self, message, target):
         self.message = message
